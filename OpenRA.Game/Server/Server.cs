@@ -21,7 +21,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualBasic;
 using OpenRA;
 using OpenRA.FileFormats;
 using OpenRA.Network;
@@ -123,7 +122,7 @@ namespace OpenRA.Server
 		public bool IsMultiplayer => Type == ServerType.Dedicated || Type == ServerType.Multiplayer;
 
 		public readonly List<Connection> Conns = new();
-		public readonly QueryStatStatServer<GameStats<PlayerStats>, PlayerStats> instQueryStatStatServer;
+		public readonly QueryStatStatServer<GameStats<PlayerStats>, PlayerStats> InstQueryStatStatServer;
 
 		public Session LobbyInfo;
 		public ServerSettings Settings;
@@ -151,7 +150,7 @@ namespace OpenRA.Server
 		readonly BlockingCollection<IServerEvent> events = new();
 
 		ReplayRecorder recorder;
-		public GameInformation gameInfo { get; private set; }
+		public GameInformation GameInfo { get; private set; }
 		readonly List<GameInformation.Player> worldPlayers = new();
 		readonly Stopwatch pingUpdated = Stopwatch.StartNew();
 
@@ -347,8 +346,8 @@ namespace OpenRA.Server
 
 			if (IsMultiplayer)
 			{
-				instQueryStatStatServer = QueryStatStatServer<GameStats<PlayerStats>, PlayerStats>.GetServer(this);
-				instQueryStatStatServer.StartServer();
+				InstQueryStatStatServer = QueryStatStatServer<GameStats<PlayerStats>, PlayerStats>.GetServer(this);
+				InstQueryStatStatServer.StartServer();
 				var trait = new QueryStatUpdateTrait(this);
 				serverTraits.Add(trait);
 				serverTraits.Add(new DebugServerTrait());
@@ -420,7 +419,7 @@ namespace OpenRA.Server
 					}
 
 					Conns.Clear();
-					instQueryStatStatServer.StopServer();
+					InstQueryStatStatServer.StopServer();
 
 					State = ServerState.Stopped;
 					Log.Write("server", "Server exited");
@@ -817,7 +816,7 @@ namespace OpenRA.Server
 		bool AnyUndefinedWinStates()
 		{
 			var lastTeam = -1;
-			var remainingPlayers = gameInfo.Players.Where(p => p.Outcome == WinState.Undefined);
+			var remainingPlayers = GameInfo.Players.Where(p => p.Outcome == WinState.Undefined);
 			foreach (var player in remainingPlayers)
 			{
 				if (lastTeam >= 0 && (player.Team != lastTeam || player.Team == 0))
@@ -842,7 +841,7 @@ namespace OpenRA.Server
 			if (!AnyUndefinedWinStates())
 			{
 				var now = DateTime.UtcNow;
-				var remainingPlayers = gameInfo.Players.Where(p => p.Outcome == WinState.Undefined);
+				var remainingPlayers = GameInfo.Players.Where(p => p.Outcome == WinState.Undefined);
 				foreach (var winner in remainingPlayers)
 				{
 					winner.Outcome = WinState.Won;
@@ -1156,7 +1155,7 @@ namespace OpenRA.Server
 						// Rebuild/remap the saved client state
 						// TODO: Multiplayer saves should leave all humans as spectators so they can manually pick slots
 						var botControllerIdx = LobbyInfo.Clients.FirstOrDefault(c => c.IsHiddenObserver)?.Index;
-						botControllerIdx ??= LobbyInfo.Clients.First(c => c.IsAdmin).Index;;
+						botControllerIdx ??= LobbyInfo.Clients.First(c => c.IsAdmin).Index;
 						foreach (var kv in GameSave.SlotClients)
 						{
 							if (kv.Value.Bot != null)
@@ -1284,8 +1283,8 @@ namespace OpenRA.Server
 				disconnectPacket.Write(toDrop.PlayerIndex);
 				DispatchServerOrdersToClients(disconnectPacket.ToArray(), toDrop.LastOrdersFrame + 1);
 
-				if (gameInfo != null)
-					foreach (var player in gameInfo.Players.Where(p => p.ClientIndex == toDrop.PlayerIndex))
+				if (GameInfo != null)
+					foreach (var player in GameInfo.Players.Where(p => p.ClientIndex == toDrop.PlayerIndex))
 						player.DisconnectFrame = toDrop.LastOrdersFrame + 1;
 
 				// All clients have left: clean up
@@ -1394,7 +1393,7 @@ namespace OpenRA.Server
 				foreach (var cmpi in Map.WorldActorInfo.TraitInfos<ICreatePlayersInfo>())
 					cmpi.CreateServerPlayers(Map, LobbyInfo, worldPlayers, playerRandom);
 
-				gameInfo = new GameInformation
+				GameInfo = new GameInformation
 				{
 					Mod = Game.ModData.Manifest.Id,
 					Version = Game.ModData.Manifest.Metadata.Version,
@@ -1406,10 +1405,10 @@ namespace OpenRA.Server
 				// Replay metadata should only include the playable players
 				foreach (var p in worldPlayers)
 					if (p != null)
-						gameInfo.Players.Add(p);
+						GameInfo.Players.Add(p);
 
 				if (recorder != null)
-					recorder.Metadata = new ReplayMetadata(gameInfo);
+					recorder.Metadata = new ReplayMetadata(GameInfo);
 
 				SyncLobbyInfo();
 

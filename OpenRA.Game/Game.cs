@@ -115,7 +115,7 @@ namespace OpenRA
 			Console.WriteLine("JoinDedicatedServerSpectator");
 			UnitOrders.CreateHiddenObserver = true;
 			var newConnection = new NetworkConnection(endpoint);
-			//var newConnection = new EchoConnection();
+
 			var om = new OrderManager(newConnection);
 			JoinInner(om);
 
@@ -124,8 +124,6 @@ namespace OpenRA
 
 			lastConnectionState = ConnectionState.PreConnecting;
 			ConnectionStateChanged(OrderManager, password, newConnection);
-
-			Console.WriteLine("Done");
 
 			return om;
 		}
@@ -263,7 +261,6 @@ namespace OpenRA
 			OrderManager.World.PostLoadComplete(worldRenderer);
 
 			AfterGameStart();
-			Console.WriteLine("Started");
 		}
 
 		public static void RestartGame()
@@ -641,7 +638,6 @@ namespace OpenRA
 
 		static void InnerLogicTick(OrderManager orderManager)
 		{
-			//Console.WriteLine("InnerLogicTick()");
 			var tick = RunTime;
 
 			var world = orderManager.World;
@@ -694,7 +690,6 @@ namespace OpenRA
 
 		static void LogicTick()
 		{
-			//Console.WriteLine("LogicTick()");
 			PerformDelayedActions();
 
 			if (OrderManager.Connection is NetworkConnection nc && nc.ConnectionState != lastConnectionState)
@@ -720,7 +715,6 @@ namespace OpenRA
 
 		static void RenderTick()
 		{
-			//Console.WriteLine("RenderTick()");
 			using (new PerfSample("render"))
 			{
 				++RenderFrame;
@@ -851,7 +845,6 @@ namespace OpenRA
 
 			while (state == RunStatus.Running)
 			{
-				//Console.WriteLine("Loop()");
 				var logicInterval = Ui.Timestep;
 				var logicWorld = worldRenderer?.World;
 

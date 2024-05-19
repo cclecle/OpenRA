@@ -460,6 +460,7 @@ namespace OpenRA
 						a.Tick();
 
 				ApplyToActorsWithTraitTimed<ITick>((actor, trait) => trait.Tick(actor), "Trait");
+
 				effects.DoTimed(e => e.Tick(this), "Effect");
 			}
 

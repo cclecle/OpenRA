@@ -653,7 +653,7 @@ namespace OpenRA.Mods.Common.Server
 
 						// Validate if color is allowed and get an alternative if it isn't
 						server.LobbyInfo.Clients
-						.Where(c => !c.IsObserver && server.LobbyInfo.Slots[c.Slot].LockColor)
+						.Where(c => !c.IsObserver && c.Slot != null && !server.LobbyInfo.Slots[c.Slot].LockColor)
 						.AsParallel().ForAll(c => c.Color = c.PreferredColor = SanitizePlayerColor(server, c.Color, c.Index, conn));
 
 						server.LobbyInfo.DisabledSpawnPoints.Clear();
@@ -981,7 +981,7 @@ namespace OpenRA.Mods.Common.Server
 				var newAdminClient = server.GetClient(newAdminConn);
 				client.IsAdmin = false;
 				newAdminClient.IsAdmin = true;
-				// TODO: make bot controlled by the server !
+
 				var bots = server.LobbyInfo.Slots
 					.Select(slot => server.LobbyInfo.ClientInSlot(slot.Key))
 					.Where(c => c != null && c.Bot != null);
@@ -991,7 +991,6 @@ namespace OpenRA.Mods.Common.Server
 
 				foreach (var b in bots)
 					b.BotControllerClientIndex = (int)botControllerIdx;
-
 
 				server.SendLocalizedMessage(NewAdmin, Translation.Arguments("player", newAdminClient.Name));
 				Log.Write("server", $"{newAdminClient.Name} is now the admin.");

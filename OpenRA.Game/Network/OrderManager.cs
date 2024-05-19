@@ -271,12 +271,11 @@ namespace OpenRA.Network
 				Connection.SendSync(NetFrameNumber, World.SyncHash(), defeatState);
 			}
 			else
-			{
 				Connection.SendSync(NetFrameNumber, 0, 0);
-			}
 
 			if (generateSyncReport)
-				syncReport.UpdateSyncReport(processClientOrders);
+				using (new PerfSample("sync_report"))
+					syncReport.UpdateSyncReport(processClientOrders);
 
 			processClientOrders.Clear();
 			processClientsToRemove.Clear();

@@ -53,7 +53,7 @@ namespace OpenRA.Server
 		{
 			this.world = world;
 			gameStats = Game.server?
-							.instQueryStatStatServer
+							.InstQueryStatStatServer
 							.StatsSessionHander
 							.GameStats;
 		}
@@ -108,14 +108,14 @@ namespace OpenRA.Server
 
 		public QueryStatUpdateTrait(Server server)
 		{
-			gameStats = server.instQueryStatStatServer
+			gameStats = server.InstQueryStatStatServer
 					.StatsSessionHander
 					.GameStats;
 		}
 
 		public void ServerStarted(Server server)
 		{
-			if (server.gameInfo is null)
+			if (server.GameInfo is null)
 				gameStats.StartTimeUtc = DateTime.UtcNow;
 			FullUpdate(server);
 		}
@@ -184,8 +184,8 @@ namespace OpenRA.Server
 
 				gameStats.MapID = server.LobbyInfo.GlobalSettings.Map ?? "";
 
-				if (server.gameInfo is not null)
-					gameStats.StartTimeUtc = server.gameInfo.StartTimeUtc;
+				if (server.GameInfo is not null)
+					gameStats.StartTimeUtc = server.GameInfo.StartTimeUtc;
 
 				gameStats.Players.Clear();
 
