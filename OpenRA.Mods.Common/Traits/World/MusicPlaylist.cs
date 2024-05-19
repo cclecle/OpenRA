@@ -101,7 +101,7 @@ namespace OpenRA.Mods.Common.Traits
 		void IPostWorldLoaded.PostWorldLoaded(World world, WorldRenderer wr)
 		{
 			// Reset any bogus pre-existing state
-			if (Game.Renderer != null)
+			if (!Game.IsHeadLess)
 				Game.Sound.DisableWorldSounds = info.DisableWorldSounds;
 
 			if (!world.IsLoadingGameSave)
@@ -160,10 +160,12 @@ namespace OpenRA.Mods.Common.Traits
 
 		void Play()
 		{
+			if (Game.IsHeadLess) return;
+
 			if (!SongExists(currentSong) || (CurrentSongIsBackground && IsBackgroundMusicMuted))
 				return;
-			if (Game.Renderer != null)
-				Game.Sound.PlayMusicThen(currentSong, PlayNextSong);
+
+			Game.Sound.PlayMusicThen(currentSong, PlayNextSong);
 		}
 
 		void PlayNextSong()
@@ -193,7 +195,7 @@ namespace OpenRA.Mods.Common.Traits
 			currentSong = music;
 			CurrentSongIsBackground = false;
 
-			if (Game.Renderer != null)
+			if (!Game.IsHeadLess)
 				Game.Sound.PlayMusicThen(music, onComplete);
 		}
 
@@ -237,7 +239,7 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			currentSong = null;
 
-			if (Game.Renderer != null)
+			if (!Game.IsHeadLess)
 				Game.Sound.StopMusic();
 
 			if (currentBackgroundSong != null)
@@ -252,7 +254,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		void INotifyActorDisposing.Disposing(Actor self)
 		{
-			if (Game.Renderer != null)
+			if (!Game.IsHeadLess)
 			{
 				if (currentSong != null)
 					Game.Sound.StopMusic();

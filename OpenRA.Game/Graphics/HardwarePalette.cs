@@ -29,7 +29,7 @@ namespace OpenRA.Graphics
 
 		public HardwarePalette()
 		{
-			if (Game.Renderer == null) return;
+			if (Game.IsHeadLess) return;
 			Texture = Game.Renderer.Context.CreateTexture();
 			ColorShifts = Game.Renderer.Context.CreateTexture();
 		}

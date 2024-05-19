@@ -136,7 +136,7 @@ namespace OpenRA.Graphics
 			releaseBufferOnCommit = true;
 
 			// Commit data from the buffer to the texture, allowing the buffer to be released and reclaimed by GC.
-			if (Game.Renderer != null)
+			if (!Game.IsHeadLess)
 				GetTexture();
 		}
 

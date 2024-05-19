@@ -136,7 +136,7 @@ namespace OpenRA.Graphics
 
 		public Viewport(WorldRenderer wr, Map map)
 		{
-			if (Game.Renderer == null) return;
+			if (Game.IsHeadLess) return;
 
 			worldRenderer = wr;
 			var grid = Game.ModData.Manifest.Get<MapGrid>();

@@ -64,7 +64,7 @@ namespace OpenRA.Graphics
 
 			Player.SetupRelationshipColors(world.Players, world.LocalPlayer, this, true);
 
-			if (Game.Renderer != null)
+			if (!Game.IsHeadLess)
 				palette.Initialize();
 
 			TerrainLighting = world.WorldActor.TraitOrDefault<ITerrainLighting>();

@@ -33,7 +33,7 @@ namespace OpenRA.Mods.Common.LoadScreens
 
 		public virtual void Display()
 		{
-			if (Game.Renderer == null || initialized)
+			if (Game.IsHeadLess || initialized)
 				return;
 
 			// Draw a black screen

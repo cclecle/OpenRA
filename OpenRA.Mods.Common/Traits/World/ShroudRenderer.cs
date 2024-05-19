@@ -202,7 +202,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		void IWorldLoaded.WorldLoaded(World w, WorldRenderer wr)
 		{
-			if (Game.Renderer == null) return;
+			if (Game.IsHeadLess) return;
 
 			// Initialize tile cache
 			// This includes the region outside the visible area to cover any sprites peeking outside the map

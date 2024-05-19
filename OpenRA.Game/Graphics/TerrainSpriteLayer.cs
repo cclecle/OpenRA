@@ -52,12 +52,12 @@ namespace OpenRA.Graphics
 			vertexRowStride = 4 * map.MapSize.X;
 			vertices = new Vertex[vertexRowStride * map.MapSize.Y];
 
-			if (Game.Renderer != null)
+			if (!Game.IsHeadLess)
 				vertexBuffer = Game.Renderer.Context.CreateVertexBuffer<Vertex>(vertices.Length);
 
 			indexRowStride = 6 * map.MapSize.X;
 
-			if (Game.Renderer != null)
+			if (!Game.IsHeadLess)
 			{
 				lock (IndexBuffers)
 				{
@@ -243,7 +243,7 @@ namespace OpenRA.Graphics
 			if (worldRenderer.TerrainLighting != null)
 				worldRenderer.TerrainLighting.CellChanged -= UpdateTint;
 
-			if (Game.Renderer != null)
+			if (!Game.IsHeadLess)
 			{
 				vertexBuffer.Dispose();
 				lock (IndexBuffers)

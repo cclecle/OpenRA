@@ -63,7 +63,7 @@ namespace OpenRA.Mods.Common
 				return;
 
 			// HACK: Prevent service from starting when launching the utility or server.
-			if (Game.Renderer == null)
+			if (Game.IsHeadLess)
 				return;
 
 			client = new DiscordRpcClient(ApplicationId, autoEvents: true)

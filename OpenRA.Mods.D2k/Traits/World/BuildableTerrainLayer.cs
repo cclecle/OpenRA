@@ -57,7 +57,8 @@ namespace OpenRA.Mods.D2k.Traits
 
 		void IWorldLoaded.WorldLoaded(World w, WorldRenderer wr)
 		{
-			if (Game.Renderer == null) return;
+			if (Game.IsHeadLess) return;
+
 			render = new TerrainSpriteLayer(w, wr, terrainRenderer.MissingTile, BlendMode.Alpha, wr.World.Type != WorldType.Editor);
 			paletteReference = wr.Palette(info.Palette);
 		}

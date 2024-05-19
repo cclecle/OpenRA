@@ -129,7 +129,7 @@ namespace OpenRA.Mods.Common.Traits
 
 			paletteReference = wr.Palette(Info.Palette);
 
-			if (Game.Renderer != null)
+			if (!Game.IsHeadLess)
 			{
 				render = new TerrainSpriteLayer(w, wr, emptySprite, blendMode, w.Type != WorldType.Editor);
 

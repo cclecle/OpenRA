@@ -45,7 +45,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		public CellTriggerOverlay(CellTriggerOverlayInfo info)
 		{
-			if (Game.Renderer == null) return;
+			if (Game.IsHeadLess) return;
 
 			this.info = info;
 			color = info.Color;

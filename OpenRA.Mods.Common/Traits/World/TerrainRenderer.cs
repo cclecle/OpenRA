@@ -80,7 +80,8 @@ namespace OpenRA.Mods.Common.Traits
 
 		void IWorldLoaded.WorldLoaded(World world, WorldRenderer wr)
 		{
-			if (Game.Renderer == null) return;
+			if (Game.IsHeadLess) return;
+
 			worldRenderer = wr;
 			spriteLayer = new TerrainSpriteLayer(world, wr, tileCache.MissingTile, BlendMode.Alpha, world.Type != WorldType.Editor);
 			foreach (var cell in map.AllCells)
@@ -118,7 +119,7 @@ namespace OpenRA.Mods.Common.Traits
 			map.Tiles.CellEntryChanged -= UpdateCell;
 			map.Height.CellEntryChanged -= UpdateCell;
 
-			if (Game.Renderer != null)
+			if (!Game.IsHeadLess)
 				spriteLayer.Dispose();
 
 			tileCache.Dispose();

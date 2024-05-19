@@ -61,7 +61,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		void IWorldLoaded.WorldLoaded(World world, WorldRenderer wr)
 		{
-			if (Game.Renderer == null) return;
+			if (Game.IsHeadLess) return;
 
 			if (!world.IsLoadingGameSave && info.ClearRoot)
 				Ui.ResetAll();
