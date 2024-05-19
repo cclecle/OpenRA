@@ -19,6 +19,7 @@ using OpenRA.QueryStats;
 
 namespace OpenRA.Test
 {
+	#region TestDefs
 	class TestClientSession : ClientSession
 	{
 		public int? GetChallenge() => challenge;
@@ -99,9 +100,29 @@ namespace OpenRA.Test
 		public IDictionary<IPEndPoint, TestClientSession> GetActiveSessions() => activeSessions;
 	}
 
+	public class NewCustomMessage : A2S_SimpleCommand
+	{
+		public override byte Header { get => 0x42; }
+	}
+
+	#endregion
+
+	#region SessionHandler
 	[TestFixture]
 	sealed class QueryStatsTest_SessionHandler
 	{
+		[SetUp]
+		public void TestSetUp()
+		{
+			MessageFactory.GetFactory().CustomMessages.Clear();
+		}
+
+		[TearDown]
+		public void TestTearDown()
+		{
+			MessageFactory.GetFactory().CustomMessages.Clear();
+		}
+
 		[Test]
 		public void ClientSessionHandler2ServerSessionHandler_S2A_RULES()
 		{
@@ -373,9 +394,23 @@ namespace OpenRA.Test
 			return cSession.Response;
 		}
 	}
+	#endregion
 
+	#region Session
 	sealed class QueryStatsTest_Session
 	{
+		[SetUp]
+		public void TestSetUp()
+		{
+			MessageFactory.GetFactory().CustomMessages.Clear();
+		}
+
+		[TearDown]
+		public void TestTearDown()
+		{
+			MessageFactory.GetFactory().CustomMessages.Clear();
+		}
+
 		[Test]
 		public void ClientServerSession_A2S_INFO_Payload()
 		{
@@ -766,10 +801,24 @@ namespace OpenRA.Test
 			return resp_frames;
 		}
 	}
+	#endregion
 
+	#region Transport
 	[TestFixture]
 	sealed class QueryStatsTest_Transport
 	{
+		[SetUp]
+		public void TestSetUp()
+		{
+			MessageFactory.GetFactory().CustomMessages.Clear();
+		}
+
+		[TearDown]
+		public void TestTearDown()
+		{
+			MessageFactory.GetFactory().CustomMessages.Clear();
+		}
+
 		[Test]
 		public void Frame_OutOfOrder()
 		{
@@ -912,10 +961,24 @@ namespace OpenRA.Test
 			return pktInList.Count;
 		}
 	}
+	#endregion
 
+	#region Protocol
 	[TestFixture]
 	sealed class QueryStatsTest_Protocol
 	{
+		[SetUp]
+		public void TestSetUp()
+		{
+			MessageFactory.GetFactory().CustomMessages.Clear();
+		}
+
+		[TearDown]
+		public void TestTearDown()
+		{
+			MessageFactory.GetFactory().CustomMessages.Clear();
+		}
+
 		[Test]
 		public void Fatory()
 		{
@@ -1286,10 +1349,38 @@ namespace OpenRA.Test
 			}));
 		}
 	}
+	#endregion
 
+	#region Messages
 	[TestFixture]
 	sealed class QueryStatsTest_Messages
 	{
+		[SetUp]
+		public void TestSetUp()
+		{
+			MessageFactory.GetFactory().CustomMessages.Clear();
+		}
+
+		[TearDown]
+		public void TestTearDown()
+		{
+			MessageFactory.GetFactory().CustomMessages.Clear();
+		}
+
+		[Test]
+		public void Fatory_CustomMessage()
+		{
+			Assert.Throws<ExceptionMessageNotIdentifyed>(() => Fatory_TestMessage<NewCustomMessage>(new byte[] { 0x42 }));
+
+			// Add Custom message to the factory
+			MessageFactory.GetFactory().CustomMessages.Add(new NewCustomMessage());
+
+			Fatory_TestMessage<NewCustomMessage>(new byte[]
+			{
+				0x42, // Header
+			});
+		}
+
 		[Test]
 		public void Fatory()
 		{
@@ -1961,4 +2052,5 @@ namespace OpenRA.Test
 			Assert.That(test_msg4.GameID, Is.EqualTo(0x095a3b5c3f69e563));
 		}
 	}
+	#endregion
 }

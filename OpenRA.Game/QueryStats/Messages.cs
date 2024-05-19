@@ -11,8 +11,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Text;
 using OpenRA.Support;
 
@@ -23,7 +23,7 @@ namespace OpenRA.QueryStats
 
 	public class MessageFactory : AMessageFactory<MessageFactory>
 	{
-		readonly ImmutableArray<AMessage> registeredMessages = new List<AMessage>
+		readonly AMessage[] baseMessages = new List<AMessage>
 		{
 			new A2S_INFO(),
 			new S2A_INFO(),
@@ -32,8 +32,9 @@ namespace OpenRA.QueryStats
 			new A2S_RULES(),
 			new S2A_RULES(),
 			new S2C_CHALLENGE()
-		}.ToImmutableArray();
-		public override ImmutableArray<AMessage> RegisteredMessages { get => registeredMessages; }
+		}.ToArray();
+		public readonly List<AMessage> CustomMessages = new();
+		public override AMessage[] RegisteredMessages { get => baseMessages.Union(CustomMessages).ToArray(); }
 	}
 
 	public abstract class Message : AMessage

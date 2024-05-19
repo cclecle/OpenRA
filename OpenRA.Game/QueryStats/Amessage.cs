@@ -20,7 +20,7 @@ namespace OpenRA.QueryStats
 	public class ExceptionMessageNotIdentifyed : ExceptionAMessage { }
 	public abstract class AMessageFactory<T> where T : AMessageFactory<T>, new()
 	{
-		public virtual ImmutableArray<AMessage> RegisteredMessages { get; }
+		public virtual AMessage[] RegisteredMessages { get; }
 
 		protected AMessageFactory() { }
 		static T Factory { get; set; } = null;

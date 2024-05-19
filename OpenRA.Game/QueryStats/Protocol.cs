@@ -23,12 +23,12 @@ namespace OpenRA.QueryStats
 
 	public class PacketFactory : AMessageFactory<PacketFactory>
 	{
-		readonly ImmutableArray<AMessage> registeredMessages = new List<AMessage>
+		readonly AMessage[] registeredMessages = new List<AMessage>
 		{
 			new PacketShort(),
 			new PacketLong()
-		}.ToImmutableArray();
-		public override ImmutableArray<AMessage> RegisteredMessages { get => registeredMessages; }
+		}.ToArray();
+		public override AMessage[] RegisteredMessages { get => registeredMessages; }
 	}
 
 	public abstract class Packet : AMessage
