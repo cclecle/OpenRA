@@ -88,7 +88,6 @@ namespace OpenRA.Mods.Cnc.Traits
 			};
 
 			shader.SetMatrix("View", view);
-
 		}
 
 		public ModelRenderProxy RenderAsync(

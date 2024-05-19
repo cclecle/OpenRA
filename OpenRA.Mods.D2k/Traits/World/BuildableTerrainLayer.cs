@@ -102,7 +102,7 @@ namespace OpenRA.Mods.D2k.Traits
 			dirty[cell] = null;
 		}
 
-		public void Tick(Actor self)
+		void ITick.Tick(Actor self)
 		{
 			var tiles = dirty.Where(t => !self.World.FogObscures(t.Key)).ToList();
 
@@ -158,6 +158,5 @@ namespace OpenRA.Mods.D2k.Traits
 			render.Dispose();
 			disposed = true;
 		}
-
 	}
 }

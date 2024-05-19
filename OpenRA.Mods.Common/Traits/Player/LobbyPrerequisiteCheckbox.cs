@@ -53,7 +53,7 @@ namespace OpenRA.Mods.Common.Traits
 		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
 		{
 			var enabled = lobbyInfo.GlobalSettings.OptionOrDefault(ID, Enabled);
-			return new List<Tuple<string, string>> { new Tuple<string, string>(ID, enabled.ToString()) };
+			return new List<Tuple<string, string>> { new(ID, enabled.ToString()) };
 		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)

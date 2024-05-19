@@ -86,8 +86,8 @@ namespace OpenRA.Mods.Common.Traits
 			var techLevel = lobbyInfo.GlobalSettings.OptionOrDefault("techlevel", TechLevel);
 			return new List<Tuple<string, string>>
 			{
-				new Tuple<string, string>("techlevel", techLevel),
-				new Tuple<string, string>("shortgame", shortGameCheckboxEnabled.ToString())
+				new("techlevel", techLevel),
+				new("shortgame", shortGameCheckboxEnabled.ToString())
 			};
 		}
 

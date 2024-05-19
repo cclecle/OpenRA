@@ -65,8 +65,8 @@ namespace OpenRA.Mods.Common.Traits
 			var buildRadiusCheckboxEnabled = lobbyInfo.GlobalSettings.OptionOrDefault("buildradius", BuildRadiusCheckboxEnabled);
 			return new List<Tuple<string, string>>
 			{
-				new Tuple<string, string>("allybuild", allyBuildRadiusCheckboxEnabled.ToString()),
-				new Tuple<string, string>("buildradius", buildRadiusCheckboxEnabled.ToString())
+				new("allybuild", allyBuildRadiusCheckboxEnabled.ToString()),
+				new("buildradius", buildRadiusCheckboxEnabled.ToString())
 			};
 		}
 

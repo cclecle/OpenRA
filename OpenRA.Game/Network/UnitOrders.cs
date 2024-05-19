@@ -18,9 +18,8 @@ namespace OpenRA.Network
 {
 	public static class UnitOrders
 	{
-		public static bool CreateHiddenObserver = false;
-
 		public const int ChatMessageMaxLength = 2500;
+		public static bool CreateHiddenObserver = false;
 
 		[TranslationReference("player")]
 		const string Joined = "notification-joined";

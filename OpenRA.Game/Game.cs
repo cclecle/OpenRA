@@ -50,7 +50,7 @@ namespace OpenRA
 		static string modLaunchWrapper;
 
 		internal static OrderManager OrderManager;
-		public static Server.Server server;
+		public static Server.Server Server;
 
 		public static MersenneTwister CosmeticRandom = new(); // not synced
 
@@ -113,6 +113,7 @@ namespace OpenRA
 		public static OrderManager JoinDedicatedServerSpectator(ConnectionTarget endpoint, string password, string secret)
 		{
 			Console.WriteLine("JoinDedicatedServerSpectator");
+
 			UnitOrders.CreateHiddenObserver = true;
 			var newConnection = new NetworkConnection(endpoint);
 
@@ -495,7 +496,7 @@ namespace OpenRA
 
 			worldRenderer?.Dispose();
 			worldRenderer = null;
-			server?.Shutdown();
+			Server?.Shutdown();
 			OrderManager?.Dispose();
 
 			if (ModData != null)
@@ -609,7 +610,7 @@ namespace OpenRA
 			}
 		}
 
-		public static RunStatus state { get; private set; } = RunStatus.Running;
+		public static RunStatus State { get; private set; } = RunStatus.Running;
 		public static event Action OnQuit = () => { };
 
 		// Note: These delayed actions should only be used by widgets or disposing objects
@@ -841,9 +842,9 @@ namespace OpenRA
 			var forcedNextRender = RunTime;
 			var renderBeforeNextTick = false;
 
-			state = RunStatus.Running;
+			State = RunStatus.Running;
 
-			while (state == RunStatus.Running)
+			while (State == RunStatus.Running)
 			{
 				var logicInterval = Ui.Timestep;
 				var logicWorld = worldRenderer?.World;
@@ -891,7 +892,6 @@ namespace OpenRA
 							renderBeforeNextTick = true;
 					}
 
-
 					var haveSomeTimeUntilNextLogic = now < nextLogic;
 					var isTimeToRender = now >= nextRender;
 					if (IsHeadLess)
@@ -928,7 +928,6 @@ namespace OpenRA
 						// Ensure that we still logic tick despite not rendering
 						renderBeforeNextTick = false;
 					}
-
 				}
 				else
 					Thread.Sleep((int)(nextUpdate - now));
@@ -965,12 +964,12 @@ namespace OpenRA
 
 			OnQuit();
 
-			return state;
+			return State;
 		}
 
 		public static void Exit()
 		{
-			state = RunStatus.Success;
+			State = RunStatus.Success;
 		}
 
 		public static void Disconnect()
@@ -986,7 +985,7 @@ namespace OpenRA
 
 		public static void CloseServer()
 		{
-			server?.Shutdown();
+			Server?.Shutdown();
 		}
 
 		public static T CreateObject<T>(string name)
@@ -1001,9 +1000,9 @@ namespace OpenRA
 				new(IPAddress.IPv6Any, settings.ListenPort),
 				new(IPAddress.Any, settings.ListenPort)
 			};
-			server = new Server.Server(endpoints, settings, ModData, ServerType.Multiplayer);
+			Server = new Server.Server(endpoints, settings, ModData, ServerType.Multiplayer);
 
-			return server.GetEndpointForLocalConnection();
+			return Server.GetEndpointForLocalConnection();
 		}
 
 		public static ConnectionTarget CreateLocalServer(string map, bool isSkirmish = false)
@@ -1022,9 +1021,9 @@ namespace OpenRA
 			{
 				new(IPAddress.Loopback, 0)
 			};
-			server = new Server.Server(endpoints, settings, ModData, isSkirmish ? ServerType.Skirmish : ServerType.Local);
+			Server = new Server.Server(endpoints, settings, ModData, isSkirmish ? ServerType.Skirmish : ServerType.Local);
 
-			return server.GetEndpointForLocalConnection();
+			return Server.GetEndpointForLocalConnection();
 		}
 
 		public static bool IsCurrentWorld(World world)

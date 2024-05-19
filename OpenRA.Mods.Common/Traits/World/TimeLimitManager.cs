@@ -92,7 +92,7 @@ namespace OpenRA.Mods.Common.Traits
 			};
 
 			var timelimit = lobbyInfo.GlobalSettings.OptionOrDefault("timelimit", TimeLimitDefault.ToString(nfi));
-			return new List<Tuple<string, string>> { new Tuple<string, string>("timelimit", timelimit) };
+			return new List<Tuple<string, string>> { new("timelimit", timelimit) };
 		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)

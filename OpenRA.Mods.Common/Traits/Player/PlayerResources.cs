@@ -64,7 +64,7 @@ namespace OpenRA.Mods.Common.Traits
 		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
 		{
 			var defaultCash = lobbyInfo.GlobalSettings.OptionOrDefault("startingcash", DefaultCash.ToStringInvariant());
-			return new List<Tuple<string, string>> { new Tuple<string, string>("startingcash", defaultCash) };
+			return new List<Tuple<string, string>> { new("startingcash", defaultCash) };
 		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)

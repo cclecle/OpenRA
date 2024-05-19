@@ -52,7 +52,7 @@ namespace OpenRA.Server
 		public QueryStatsUpdatePlayerStats(World world)
 		{
 			this.world = world;
-			gameStats = Game.server?
+			gameStats = Game.Server?
 							.InstQueryStatStatServer
 							.StatsSessionHander
 							.GameStats;
@@ -265,8 +265,8 @@ namespace OpenRA.Server
 	}
 
 	public class OpenRAServerSessionHandler<TGameStats, TPlayerStats> : ServerSessionHandler<OpenRAServerSession<TGameStats, TPlayerStats>>
-	where TPlayerStats : PlayerStats, new()
 	where TGameStats : GameStats<TPlayerStats>, new()
+	where TPlayerStats : PlayerStats, new()
 	{
 		public readonly TGameStats GameStats = new();
 		protected override OpenRAServerSession<TGameStats, TPlayerStats> CreateSession()
@@ -278,8 +278,8 @@ namespace OpenRA.Server
 	}
 
 	public class OpenRAServerSession<TGameStats, TPlayerStats> : ServerSession
-	where TPlayerStats : PlayerStats, new()
 	where TGameStats : GameStats<TPlayerStats>, new()
+	where TPlayerStats : PlayerStats, new()
 	{
 		public TGameStats GameStats = null;
 		static readonly ObjectCache Cache = MemoryCache.Default;
@@ -411,8 +411,8 @@ namespace OpenRA.Server
 	}
 
 	public sealed class QueryStatStatServer<TGameStats, TPlayerStats> : IDisposable
-	where TPlayerStats : PlayerStats, new()
 	where TGameStats : GameStats<TPlayerStats>, new()
+	where TPlayerStats : PlayerStats, new()
 	{
 		static QueryStatStatServer<TGameStats, TPlayerStats> instance;
 		static readonly PacketFactory PktFactory = PacketFactory.GetFactory();

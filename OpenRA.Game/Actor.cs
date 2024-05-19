@@ -166,7 +166,7 @@ namespace OpenRA
 				{
 					var trait = traitInfo.Create(init);
 
-					if (trait is IIsServerOnly && Game.server == null)
+					if (trait is IIsServerOnly && Game.Server == null)
 					{
 						continue;
 					}

@@ -31,7 +31,6 @@ namespace OpenRA.Mods.Common.Traits
 
 			var hiddenObserverIdx = orderManager.LobbyInfo.Clients.FirstOrDefault(c => c.IsHiddenObserver)?.Index;
 
-
 			if (subjectClient == null)
 			{
 				Log.Write("debug", $"Tick {world.WorldTick}: Order sent to {order.Subject.Owner.PlayerName}: resolved ClientIndex `{subjectClientId}` doesn't exist");

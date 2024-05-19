@@ -35,6 +35,7 @@ namespace OpenRA.Server
 			{
 				Console.WriteLine("Server received command from player {0} / client {1}: {2}", conn.PlayerIndex, server.LobbyInfo.ClientWithIndex(conn.PlayerIndex), cmd);
 			}
+
 			return false;
 		}
 

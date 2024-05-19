@@ -109,7 +109,6 @@ namespace OpenRA.Mods.Common.Effects
 			beacon?.Tick();
 			circles?.Tick();
 			clock?.Tick();
-
 		}
 
 		IEnumerable<IRenderable> IEffect.Render(WorldRenderer r) { return SpriteRenderable.None; }

@@ -44,7 +44,7 @@ namespace OpenRA.Mods.Common.Traits
 		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
 		{
 			var startingUnitsClass = lobbyInfo.GlobalSettings.OptionOrDefault("startingunits", StartingUnitsClass);
-			return new List<Tuple<string, string>> { new Tuple<string, string>("startingunits", startingUnitsClass) };
+			return new List<Tuple<string, string>> { new("startingunits", startingUnitsClass) };
 		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)

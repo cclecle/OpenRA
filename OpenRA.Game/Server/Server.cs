@@ -436,7 +436,7 @@ namespace OpenRA.Server
 		void SpawnDedicatedServerSpectator()
 		{
 			Game.HeadLess = true;
-			Game.server = this;
+			Game.Server = this;
 			Game.LocalPlayerProfile = new LocalPlayerProfile(Path.Combine(Platform.SupportDir, Game.Settings.Game.AuthProfile), ModData.Manifest.Get<PlayerDatabase>());
 			var om = Game.JoinDedicatedServerSpectator(GetEndpointForLocalConnection(), Settings.Password, "");
 			new Thread(() =>

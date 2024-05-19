@@ -68,7 +68,7 @@ namespace OpenRA.Mods.Common.Traits
 		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
 		{
 			var enabled = lobbyInfo.GlobalSettings.OptionOrDefault("cheats", CheckboxEnabled);
-			return new List<Tuple<string, string>> { new Tuple<string, string>("cheats", enabled.ToString()) };
+			return new List<Tuple<string, string>> { new("cheats", enabled.ToString()) };
 		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)

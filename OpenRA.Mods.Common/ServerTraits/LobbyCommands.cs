@@ -262,8 +262,8 @@ namespace OpenRA.Mods.Common.Server
 					return;
 
 				// Does server have at least 2 human players?
-				//if (!server.LobbyInfo.GlobalSettings.EnableSingleplayer && nonBotPlayers.Count() < 2)
-				//	return;
+				// if (!server.LobbyInfo.GlobalSettings.EnableSingleplayer && nonBotPlayers.Count() < 2)
+				// 	return;
 
 				// Are the map conditions satisfied?
 				if (server.LobbyInfo.Slots.Any(sl => sl.Value.Required && server.LobbyInfo.ClientInSlot(sl.Key) == null))

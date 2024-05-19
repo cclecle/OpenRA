@@ -42,7 +42,7 @@ namespace OpenRA.Mods.Common.Traits
 		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
 		{
 			var enabled = lobbyInfo.GlobalSettings.OptionOrDefault("creeps", CheckboxEnabled);
-			return new List<Tuple<string, string>> { new Tuple<string, string>("creeps", enabled.ToString()) };
+			return new List<Tuple<string, string>> { new("creeps", enabled.ToString()) };
 		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)

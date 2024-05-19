@@ -47,9 +47,9 @@ namespace OpenRA.Server
 			if (!string.IsNullOrEmpty(supportDirArg))
 				Platform.OverrideSupportDir(supportDirArg);
 
+			Log.AddChannel("server", "dedicated-server.log", true);
 			Log.AddChannel("perf", "dedicated-perf.log", true);
 			Log.AddChannel("debug", "dedicated-debug.log", true);
-			Log.AddChannel("server", "dedicated-server.log", true);
 			Log.AddChannel("nat", "dedicated-nat.log", true);
 			Log.AddChannel("geoip", "dedicated-geoip.log", true);
 
@@ -120,7 +120,7 @@ namespace OpenRA.Server
 				WriteLineWithTimeStamp("Server exited.");
 
 				watch = Stopwatch.StartNew();
-				while (((server.State != ServerState.Stopped) || (Game.state == RunStatus.Running)) && (watch.ElapsedMilliseconds < 10000)) { Thread.Sleep(1000); }
+				while (((server.State != ServerState.Stopped) || (Game.State == RunStatus.Running)) && (watch.ElapsedMilliseconds < 10000)) { Thread.Sleep(1000); }
 				if (watch.ElapsedMilliseconds >= 30000) throw new Exception("Server Stop Error.");
 
 				modData.Dispose();

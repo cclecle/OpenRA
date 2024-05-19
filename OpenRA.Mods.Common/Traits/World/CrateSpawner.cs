@@ -83,7 +83,7 @@ namespace OpenRA.Mods.Common.Traits
 		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
 		{
 			var enabled = lobbyInfo.GlobalSettings.OptionOrDefault("crates", CheckboxEnabled);
-			return new List<Tuple<string, string>> { new Tuple<string, string>("crates", enabled.ToString()) };
+			return new List<Tuple<string, string>> { new("crates", enabled.ToString()) };
 		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)
