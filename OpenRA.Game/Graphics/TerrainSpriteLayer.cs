@@ -51,13 +51,19 @@ namespace OpenRA.Graphics
 
 			vertexRowStride = 4 * map.MapSize.X;
 			vertices = new Vertex[vertexRowStride * map.MapSize.Y];
-			vertexBuffer = Game.Renderer.Context.CreateVertexBuffer<Vertex>(vertices.Length);
+
+			if (Game.Renderer != null)
+				vertexBuffer = Game.Renderer.Context.CreateVertexBuffer<Vertex>(vertices.Length);
 
 			indexRowStride = 6 * map.MapSize.X;
-			lock (IndexBuffers)
+
+			if (Game.Renderer != null)
 			{
-				indexBufferWrapper = IndexBuffers.GetValue(world, world => new IndexBufferRc(world));
-				indexBufferWrapper.AddRef();
+				lock (IndexBuffers)
+				{
+					indexBufferWrapper = IndexBuffers.GetValue(world, world => new IndexBufferRc(world));
+					indexBufferWrapper.AddRef();
+				}
 			}
 
 			palettes = new PaletteReference[map.MapSize.X * map.MapSize.Y];
@@ -237,10 +243,12 @@ namespace OpenRA.Graphics
 			if (worldRenderer.TerrainLighting != null)
 				worldRenderer.TerrainLighting.CellChanged -= UpdateTint;
 
-			vertexBuffer.Dispose();
-
-			lock (IndexBuffers)
-				indexBufferWrapper.Dispose();
+			if (Game.Renderer != null)
+			{
+				vertexBuffer.Dispose();
+				lock (IndexBuffers)
+					indexBufferWrapper.Dispose();
+			}
 		}
 
 		sealed class IndexBufferRc : IDisposable

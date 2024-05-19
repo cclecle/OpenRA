@@ -165,6 +165,19 @@ namespace OpenRA
 				foreach (var traitInfo in Info.TraitsInConstructOrder())
 				{
 					var trait = traitInfo.Create(init);
+
+					if (trait is IIsServerOnly)
+					{
+						Console.WriteLine("!!!!!!!!!!!! IIsServerOnly {trait} {Game.server}");
+						if (Game.server == null)
+						{
+							continue;
+						}
+					}
+
+					if (trait is IInitRenderer initRenderertrait && !Game.HeadLess)
+						initRenderertrait.InitRenderer(this);
+
 					AddTrait(trait);
 
 					// PERF: Cache all these traits as soon as the actor is created. This is a fairly cheap one-off cost per

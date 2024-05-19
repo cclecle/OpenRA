@@ -23,21 +23,24 @@ namespace OpenRA.Mods.Common.Traits
 
 		protected RenderPostProcessPassBase(string name, PostProcessPassType type)
 		{
-			this.type = type;
-			renderer = Game.Renderer;
-			shader = renderer.CreateShader(new RenderPostProcessPassShaderBindings(name));
-			var vertices = new RenderPostProcessPassVertex[]
+			if (!Game.HeadLess)
 			{
-				new(-1, -1),
-				new(1, -1),
-				new(1, 1),
-				new(1, 1),
-				new(-1, 1),
-				new(-1, -1)
-			};
+				this.type = type;
+				renderer = Game.Renderer;
+				shader = renderer.CreateShader(new RenderPostProcessPassShaderBindings(name));
+				var vertices = new RenderPostProcessPassVertex[]
+				{
+					new(-1, -1),
+					new(1, -1),
+					new(1, 1),
+					new(1, 1),
+					new(-1, 1),
+					new(-1, -1)
+				};
 
-			buffer = renderer.CreateVertexBuffer<RenderPostProcessPassVertex>(6);
-			buffer.SetData(ref vertices, 6);
+				buffer = renderer.CreateVertexBuffer<RenderPostProcessPassVertex>(6);
+				buffer.SetData(ref vertices, 6);
+			}
 		}
 
 		PostProcessPassType IRenderPostProcessPass.Type => type;

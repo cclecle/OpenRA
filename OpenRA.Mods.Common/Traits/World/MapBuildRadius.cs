@@ -9,14 +9,16 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
+using OpenRA.Network;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.World)]
 	[Desc("Controls the build radius checkboxes in the lobby options.")]
-	public class MapBuildRadiusInfo : TraitInfo, ILobbyOptions
+	public class MapBuildRadiusInfo : TraitInfo, ILobbyOptions, ITraitInfoQueryStatRules
 	{
 		[TranslationReference]
 		[Desc("Descriptive label for the ally build radius checkbox in the lobby.")]
@@ -57,6 +59,16 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("Display order for the build radius checkbox in the lobby.")]
 		public readonly int BuildRadiusCheckboxDisplayOrder = 0;
+		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
+		{
+			var allyBuildRadiusCheckboxEnabled = lobbyInfo.GlobalSettings.OptionOrDefault("allybuild", AllyBuildRadiusCheckboxEnabled);
+			var buildRadiusCheckboxEnabled = lobbyInfo.GlobalSettings.OptionOrDefault("buildradius", BuildRadiusCheckboxEnabled);
+			return new List<Tuple<string, string>>
+			{
+				new Tuple<string, string>("allybuild", allyBuildRadiusCheckboxEnabled.ToString()),
+				new Tuple<string, string>("buildradius", buildRadiusCheckboxEnabled.ToString())
+			};
+		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)
 		{

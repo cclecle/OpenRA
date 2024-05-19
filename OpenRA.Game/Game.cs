@@ -42,11 +42,15 @@ namespace OpenRA
 		public static CursorManager Cursor;
 		public static bool HideCursor;
 
+		public static bool HeadLess;
+
+		public static bool IsHeadLess { get => HeadLess || (Renderer == null); }
+
 		static WorldRenderer worldRenderer;
 		static string modLaunchWrapper;
 
 		internal static OrderManager OrderManager;
-		static Server.Server server;
+		public static Server.Server server;
 
 		public static MersenneTwister CosmeticRandom = new(); // not synced
 
@@ -104,6 +108,26 @@ namespace OpenRA
 		public static void JoinReplay(string replayFile)
 		{
 			JoinInner(new OrderManager(new ReplayConnection(replayFile)));
+		}
+
+		public static OrderManager JoinDedicatedServerSpectator(ConnectionTarget endpoint, string password, string secret)
+		{
+			Console.WriteLine("JoinDedicatedServerSpectator");
+			UnitOrders.CreateHiddenObserver = true;
+			var newConnection = new NetworkConnection(endpoint);
+			//var newConnection = new EchoConnection();
+			var om = new OrderManager(newConnection);
+			JoinInner(om);
+
+			CurrentServerSettings.Password = secret;
+			CurrentServerSettings.Target = endpoint;
+
+			lastConnectionState = ConnectionState.PreConnecting;
+			ConnectionStateChanged(OrderManager, password, newConnection);
+
+			Console.WriteLine("Done");
+
+			return om;
 		}
 
 		static void JoinLocal()
@@ -184,9 +208,12 @@ namespace OpenRA
 		internal static void StartGame(string mapUID, WorldType type)
 		{
 			// Dispose of the old world before creating a new one.
-			worldRenderer?.Dispose();
+			if (!HeadLess)
+			{
+				worldRenderer?.Dispose();
+				Cursor.SetCursor(null);
+			}
 
-			Cursor.SetCursor(null);
 			BeforeGameStart();
 
 			using (new PerfTimer("NewWorld"))
@@ -208,12 +235,18 @@ namespace OpenRA
 			if (OrderManager.GameStarted)
 				return;
 
-			Ui.MouseFocusWidget = null;
-			Ui.KeyboardFocusWidget = null;
+			if (!HeadLess)
+			{
+				Ui.MouseFocusWidget = null;
+				Ui.KeyboardFocusWidget = null;
+			}
 
 			OrderManager.StartGame();
-			worldRenderer.RefreshPalette();
-			Cursor.SetCursor(ChromeMetrics.Get<string>("DefaultCursor"));
+			if (!HeadLess)
+			{
+				worldRenderer.RefreshPalette();
+				Cursor.SetCursor(ChromeMetrics.Get<string>("DefaultCursor"));
+			}
 
 			// Now loading is completed, now is the ideal time to run a GC and compact the LOH.
 			// - All the temporary garbage created during loading can be collected.
@@ -230,6 +263,7 @@ namespace OpenRA
 			OrderManager.World.PostLoadComplete(worldRenderer);
 
 			AfterGameStart();
+			Console.WriteLine("Started");
 		}
 
 		public static void RestartGame()
@@ -247,8 +281,12 @@ namespace OpenRA
 			if (lobbyInfo.GlobalSettings.Map == null)
 			{
 				Disconnect();
-				Ui.ResetAll();
-				LoadShellMap();
+				if (!HeadLess)
+				{
+					Ui.ResetAll();
+					LoadShellMap();
+				}
+
 				return;
 			}
 
@@ -260,7 +298,9 @@ namespace OpenRA
 
 			// Disconnect from the current game
 			Disconnect();
-			Ui.ResetAll();
+
+			if (!HeadLess)
+				Ui.ResetAll();
 
 			// Restart the game with the same replay/mission
 			if (replay != null)
@@ -572,7 +612,7 @@ namespace OpenRA
 			}
 		}
 
-		static RunStatus state = RunStatus.Running;
+		public static RunStatus state { get; private set; } = RunStatus.Running;
 		public static event Action OnQuit = () => { };
 
 		// Note: These delayed actions should only be used by widgets or disposing objects
@@ -601,6 +641,7 @@ namespace OpenRA
 
 		static void InnerLogicTick(OrderManager orderManager)
 		{
+			//Console.WriteLine("InnerLogicTick()");
 			var tick = RunTime;
 
 			var world = orderManager.World;
@@ -609,7 +650,8 @@ namespace OpenRA
 			{
 				Ui.LastTickTime.AdvanceTickTime(tick);
 				Sync.RunUnsynced(world, Ui.Tick);
-				Cursor.Tick();
+				if (!IsHeadLess)
+					Cursor.Tick();
 			}
 
 			if (orderManager.LastTickTime.ShouldAdvance(tick))
@@ -642,7 +684,7 @@ namespace OpenRA
 					}
 
 					// Wait until we have done our first world Tick before TickRendering
-					if (orderManager.LocalFrameNumber > 0)
+					if (!IsHeadLess && orderManager.LocalFrameNumber > 0)
 						Sync.RunUnsynced(world, () => world.TickRender(worldRenderer));
 				}
 
@@ -652,6 +694,7 @@ namespace OpenRA
 
 		static void LogicTick()
 		{
+			//Console.WriteLine("LogicTick()");
 			PerformDelayedActions();
 
 			if (OrderManager.Connection is NetworkConnection nc && nc.ConnectionState != lastConnectionState)
@@ -677,6 +720,7 @@ namespace OpenRA
 
 		static void RenderTick()
 		{
+			//Console.WriteLine("RenderTick()");
 			using (new PerfSample("render"))
 			{
 				++RenderFrame;
@@ -687,20 +731,22 @@ namespace OpenRA
 					worldRenderer?.BeginFrame();
 
 					// World rendering is disabled while the loading screen is displayed
-					if (worldRenderer != null && !worldRenderer.World.IsLoadingGameSave)
+					if (!IsHeadLess && worldRenderer != null && !worldRenderer.World.IsLoadingGameSave)
 					{
 						worldRenderer.Viewport.Tick();
 						worldRenderer.PrepareRenderables();
 					}
 
-					Ui.PrepareRenderables();
+					if (!IsHeadLess)
+						Ui.PrepareRenderables();
+
 					worldRenderer?.EndFrame();
 				}
 
 				// worldRenderer is null during the initial install/download screen
 				// World rendering is disabled while the loading screen is displayed
 				// Use worldRenderer.World instead of OrderManager.World to avoid a rendering mismatch while processing orders
-				if (worldRenderer != null && !worldRenderer.World.IsLoadingGameSave)
+				if (!IsHeadLess && worldRenderer != null && !worldRenderer.World.IsLoadingGameSave)
 				{
 					Renderer.BeginWorld(worldRenderer.Viewport.Rectangle);
 					Sound.SetListenerPosition(worldRenderer.Viewport.CenterPosition);
@@ -708,34 +754,37 @@ namespace OpenRA
 						worldRenderer.Draw();
 				}
 
-				using (new PerfSample("render_widgets"))
+				if (!IsHeadLess)
 				{
-					Renderer.BeginUI();
-
-					if (worldRenderer != null && !worldRenderer.World.IsLoadingGameSave)
-						worldRenderer.DrawAnnotations();
-
-					Ui.Draw();
-
-					if (ModData != null && ModData.CursorProvider != null)
+					using (new PerfSample("render_widgets"))
 					{
-						if (HideCursor)
-							Cursor.SetCursor(null);
-						else
+						Renderer.BeginUI();
+
+						if (worldRenderer != null && !worldRenderer.World.IsLoadingGameSave)
+							worldRenderer.DrawAnnotations();
+
+						Ui.Draw();
+
+						if (ModData != null && ModData.CursorProvider != null)
 						{
-							Cursor.SetCursor(Ui.Root.GetCursorOuter(Viewport.LastMousePos) ?? "default");
-							Cursor.Render(Renderer);
+							if (HideCursor)
+								Cursor.SetCursor(null);
+							else
+							{
+								Cursor.SetCursor(Ui.Root.GetCursorOuter(Viewport.LastMousePos) ?? "default");
+								Cursor.Render(Renderer);
+							}
 						}
 					}
-				}
 
-				using (new PerfSample("render_flip"))
-					Renderer.EndFrame(new DefaultInputHandler(OrderManager.World));
+					using (new PerfSample("render_flip"))
+						Renderer.EndFrame(new DefaultInputHandler(OrderManager.World));
 
-				if (takeScreenshot)
-				{
-					takeScreenshot = false;
-					TakeScreenshotInner();
+					if (takeScreenshot)
+					{
+						takeScreenshot = false;
+						TakeScreenshotInner();
+					}
 				}
 			}
 
@@ -745,6 +794,12 @@ namespace OpenRA
 			PerfHistory.Items["render_widgets"].Tick();
 			PerfHistory.Items["render_flip"].Tick();
 			PerfHistory.Items["terrain_lighting"].Tick();
+		}
+
+		public static void RunHeadlessLoop()
+		{
+			HeadLess = true;
+			Loop();
 		}
 
 		static void Loop()
@@ -792,8 +847,11 @@ namespace OpenRA
 			var forcedNextRender = RunTime;
 			var renderBeforeNextTick = false;
 
+			state = RunStatus.Running;
+
 			while (state == RunStatus.Running)
 			{
+				//Console.WriteLine("Loop()");
 				var logicInterval = Ui.Timestep;
 				var logicWorld = worldRenderer?.World;
 
@@ -801,8 +859,9 @@ namespace OpenRA
 				if (logicWorld != null && (!logicWorld.IsReplay || logicWorld.ReplayTimestep != 0))
 					logicInterval = logicWorld == OrderManager.World ? OrderManager.SuggestedTimestep : logicWorld.Timestep;
 
-				// Ideal time between screen updates
 				var renderInterval = logicInterval;
+
+				// Ideal time between screen updates
 				if (!Settings.Graphics.CapFramerateToGameFps)
 				{
 					var maxFramerate = Settings.Graphics.CapFramerate ? Settings.Graphics.MaxFramerate.Clamp(1, 1000) : 1000;
@@ -839,9 +898,16 @@ namespace OpenRA
 							renderBeforeNextTick = true;
 					}
 
+
 					var haveSomeTimeUntilNextLogic = now < nextLogic;
 					var isTimeToRender = now >= nextRender;
-					if (!Renderer.WindowIsSuspended && ((isTimeToRender && haveSomeTimeUntilNextLogic) || forceRender))
+					if (IsHeadLess)
+					{
+						RenderTick();
+						nextRender = now + renderInterval;
+						renderBeforeNextTick = false;
+					}
+					else if (!Renderer.WindowIsSuspended && ((isTimeToRender && haveSomeTimeUntilNextLogic) || forceRender))
 					{
 						nextRender = now + renderInterval;
 
@@ -858,7 +924,7 @@ namespace OpenRA
 					}
 
 					// Simulate a render tick if it was time to render but we skip actually rendering
-					if (Renderer.WindowIsSuspended && isTimeToRender)
+					if (!IsHeadLess && Renderer.WindowIsSuspended && isTimeToRender)
 					{
 						// Make sure that nextUpdate is set to a proper minimum interval
 						nextRender = now + renderInterval;
@@ -869,6 +935,7 @@ namespace OpenRA
 						// Ensure that we still logic tick despite not rendering
 						renderBeforeNextTick = false;
 					}
+
 				}
 				else
 					Thread.Sleep((int)(nextUpdate - now));
@@ -897,8 +964,11 @@ namespace OpenRA
 			ModData.Dispose();
 			ChromeProvider.Deinitialize();
 
-			Sound.Dispose();
-			Renderer.Dispose();
+			if (!HeadLess)
+			{
+				Sound.Dispose();
+				Renderer.Dispose();
+			}
 
 			OnQuit();
 
@@ -913,10 +983,12 @@ namespace OpenRA
 		public static void Disconnect()
 		{
 			OrderManager.World?.TraitDict.PrintReport();
-
 			OrderManager.Dispose();
-			CloseServer();
-			JoinLocal();
+			if (!IsHeadLess)
+			{
+				CloseServer();
+				JoinLocal();
+			}
 		}
 
 		public static void CloseServer()

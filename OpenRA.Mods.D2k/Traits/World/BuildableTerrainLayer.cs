@@ -32,10 +32,11 @@ namespace OpenRA.Mods.D2k.Traits
 		public override object Create(ActorInitializer init) { return new BuildableTerrainLayer(init.Self, this); }
 	}
 
-	public class BuildableTerrainLayer : IRenderOverlay, IWorldLoaded, ITickRender, IRadarTerrainLayer, INotifyActorDisposing
+	public class BuildableTerrainLayer : IRenderOverlay, IWorldLoaded, ITick, ITickRender, IRadarTerrainLayer, INotifyActorDisposing
 	{
 		readonly BuildableTerrainLayerInfo info;
 		readonly Dictionary<CPos, TerrainTile?> dirty = new();
+		readonly Dictionary<CPos, TerrainTile?> toBeProcessTiles = new();
 		readonly ITiledTerrainRenderer terrainRenderer;
 		readonly World world;
 		readonly CellLayer<int> strength;
@@ -56,6 +57,7 @@ namespace OpenRA.Mods.D2k.Traits
 
 		void IWorldLoaded.WorldLoaded(World w, WorldRenderer wr)
 		{
+			if (Game.Renderer == null) return;
 			render = new TerrainSpriteLayer(w, wr, terrainRenderer.MissingTile, BlendMode.Alpha, wr.World.Type != WorldType.Editor);
 			paletteReference = wr.Palette(info.Palette);
 		}
@@ -99,30 +101,35 @@ namespace OpenRA.Mods.D2k.Traits
 			dirty[cell] = null;
 		}
 
+		public void Tick(Actor self)
+		{
+			var tiles = dirty.Where(t => !self.World.FogObscures(t.Key)).ToList();
+
+			foreach (var r in tiles)
+				dirty.Remove(r.Key);
+
+			if (!Game.IsHeadLess)
+				foreach (var r in tiles)
+					toBeProcessTiles.Add(r.Key, r.Value);
+		}
+
 		void ITickRender.TickRender(WorldRenderer wr, Actor self)
 		{
-			var remove = new List<CPos>();
-			foreach (var kv in dirty)
+			foreach (var kv in toBeProcessTiles)
 			{
-				if (!self.World.FogObscures(kv.Key))
+				var tile = kv.Value;
+				if (tile.HasValue)
 				{
-					var tile = kv.Value;
-					if (tile.HasValue)
-					{
-						// Terrain tiles define their origin at the topleft
-						var s = terrainRenderer.TileSprite(tile.Value);
-						var ss = new Sprite(s.Sheet, s.Bounds, s.ZRamp, float2.Zero, s.Channel, s.BlendMode);
-						render.Update(kv.Key, ss, paletteReference);
-					}
-					else
-						render.Clear(kv.Key);
-
-					remove.Add(kv.Key);
+					// Terrain tiles define their origin at the topleft
+					var s = terrainRenderer.TileSprite(tile.Value);
+					var ss = new Sprite(s.Sheet, s.Bounds, s.ZRamp, float2.Zero, s.Channel, s.BlendMode);
+					render.Update(kv.Key, ss, paletteReference);
 				}
+				else
+					render.Clear(kv.Key);
 			}
 
-			foreach (var r in remove)
-				dirty.Remove(r);
+			toBeProcessTiles.Clear();
 		}
 
 		void IRenderOverlay.Render(WorldRenderer wr)
@@ -150,5 +157,6 @@ namespace OpenRA.Mods.D2k.Traits
 			render.Dispose();
 			disposed = true;
 		}
+
 	}
 }

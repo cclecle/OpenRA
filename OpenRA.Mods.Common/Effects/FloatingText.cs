@@ -30,11 +30,14 @@ namespace OpenRA.Mods.Common.Effects
 
 		public FloatingText(WPos pos, Color color, string text, int duration)
 		{
-			font = Game.Renderer.Fonts["TinyBold"];
 			this.pos = pos;
 			this.color = color;
 			this.text = text;
 			remaining = duration;
+
+			if (Game.IsHeadLess) return;
+
+			font = Game.Renderer.Fonts["TinyBold"];
 		}
 
 		void IEffect.Tick(World world)

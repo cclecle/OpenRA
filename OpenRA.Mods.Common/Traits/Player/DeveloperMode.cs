@@ -9,8 +9,10 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using OpenRA.Network;
 using OpenRA.Primitives;
 using OpenRA.Traits;
 
@@ -18,7 +20,7 @@ namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.Player)]
 	[Desc("Attach this to the player actor.")]
-	public class DeveloperModeInfo : TraitInfo, ILobbyOptions
+	public class DeveloperModeInfo : TraitInfo, ILobbyOptions, ITraitInfoQueryStatRules
 	{
 		[TranslationReference]
 		[Desc("Descriptive label for the developer mode checkbox in the lobby.")]
@@ -63,6 +65,11 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("Enable the path debug overlay by default.")]
 		public readonly bool PathDebug;
+		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
+		{
+			var enabled = lobbyInfo.GlobalSettings.OptionOrDefault("cheats", CheckboxEnabled);
+			return new List<Tuple<string, string>> { new Tuple<string, string>("cheats", enabled.ToString()) };
+		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)
 		{

@@ -26,7 +26,7 @@ namespace OpenRA.Mods.Common.Traits
 		public override object Create(ActorInitializer init) { return new PlayerStatistics(init.Self); }
 	}
 
-	public class PlayerStatistics : ITick, IResolveOrder, INotifyCreated, IWorldLoaded
+	public class PlayerStatistics : ITick, IResolveOrder, INotifyCreated, IWorldLoaded, IPlayerQueryStatsUpdate
 	{
 		PlayerResources resources;
 		PlayerExperience experience;
@@ -68,6 +68,22 @@ namespace OpenRA.Mods.Common.Traits
 		public PlayerStatistics(Actor self)
 		{
 			Units = new Cache<string, ArmyUnit>(name => new ArmyUnit(self.World.Map.Rules.Actors[name], self.Owner));
+		}
+
+		PlayerQueryStats IPlayerQueryStatsUpdate.PlayerStatsUpdate()
+		{
+			return new PlayerQueryStats()
+			{
+				Earned = resources.Earned,
+				UnitsDead = UnitsDead,
+				UnitsKilled = UnitsKilled,
+				BuildingsKilled = BuildingsKilled,
+				BuildingsDead = BuildingsDead,
+				ArmyValue = ArmyValue,
+				AssetsValue = AssetsValue,
+				Experience = Experience,
+				OrderCount = OrderCount
+			};
 		}
 
 		void INotifyCreated.Created(Actor self)

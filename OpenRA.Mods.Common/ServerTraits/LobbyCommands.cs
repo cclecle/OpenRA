@@ -203,7 +203,7 @@ namespace OpenRA.Mods.Common.Server
 					return false;
 				}
 
-				if (requiresHost && !client.IsAdmin)
+				if (requiresHost && !client.IsAdmin && !client.IsHiddenObserver)
 				{
 					server.SendLocalizedMessageTo(conn, RequiresHost);
 					return false;
@@ -262,8 +262,8 @@ namespace OpenRA.Mods.Common.Server
 					return;
 
 				// Does server have at least 2 human players?
-				if (!server.LobbyInfo.GlobalSettings.EnableSingleplayer && nonBotPlayers.Count() < 2)
-					return;
+				//if (!server.LobbyInfo.GlobalSettings.EnableSingleplayer && nonBotPlayers.Count() < 2)
+				//	return;
 
 				// Are the map conditions satisfied?
 				if (server.LobbyInfo.Slots.Any(sl => sl.Value.Required && server.LobbyInfo.ClientInSlot(sl.Key) == null))
@@ -482,6 +482,7 @@ namespace OpenRA.Mods.Common.Server
 
 		static bool SlotBot(S server, Connection conn, Session.Client client, string s)
 		{
+			Console.WriteLine("SlotBot()");
 			lock (server.LobbyInfo)
 			{
 				var parts = s.Split(' ');
@@ -490,6 +491,11 @@ namespace OpenRA.Mods.Common.Server
 					server.SendLocalizedMessageTo(conn, MalformedCommand, Translation.Arguments("command", "slot_bot"));
 					return true;
 				}
+
+				Console.WriteLine($"parts[0] : {parts[0]}");
+				Console.WriteLine($"parts[1] : {parts[1]}");
+				Console.WriteLine($"parts[2] : {parts[2]}");
+				Console.WriteLine($"client : {client.Name}");
 
 				if (!ValidateSlotCommand(server, conn, client, parts[0], true))
 					return false;
@@ -522,6 +528,9 @@ namespace OpenRA.Mods.Common.Server
 				slot.Closed = false;
 				if (bot == null)
 				{
+					var botController = server.LobbyInfo.Clients.FirstOrDefault(c => c.IsHiddenObserver);
+					Console.WriteLine($"botController = {botController}");
+
 					// Create a new bot
 					bot = new Session.Client()
 					{
@@ -534,7 +543,7 @@ namespace OpenRA.Mods.Common.Server
 						Team = 0,
 						Handicap = 0,
 						State = Session.ClientState.NotReady,
-						BotControllerClientIndex = controllerClientIndex
+						BotControllerClientIndex = botController != null ? botController.Index : controllerClientIndex
 					};
 
 					// Pick a random color for the bot
@@ -643,9 +652,9 @@ namespace OpenRA.Mods.Common.Server
 						}
 
 						// Validate if color is allowed and get an alternative if it isn't
-						foreach (var c in server.LobbyInfo.Clients)
-							if (c.Slot != null && !server.LobbyInfo.Slots[c.Slot].LockColor)
-								c.Color = c.PreferredColor = SanitizePlayerColor(server, c.Color, c.Index, conn);
+						server.LobbyInfo.Clients
+						.Where(c => !c.IsObserver && server.LobbyInfo.Slots[c.Slot].LockColor)
+						.AsParallel().ForAll(c => c.Color = c.PreferredColor = SanitizePlayerColor(server, c.Color, c.Index, conn));
 
 						server.LobbyInfo.DisabledSpawnPoints.Clear();
 
@@ -972,12 +981,17 @@ namespace OpenRA.Mods.Common.Server
 				var newAdminClient = server.GetClient(newAdminConn);
 				client.IsAdmin = false;
 				newAdminClient.IsAdmin = true;
-
+				// TODO: make bot controlled by the server !
 				var bots = server.LobbyInfo.Slots
 					.Select(slot => server.LobbyInfo.ClientInSlot(slot.Key))
 					.Where(c => c != null && c.Bot != null);
+
+				var botControllerIdx = server.LobbyInfo.Clients.FirstOrDefault(c => c.IsHiddenObserver)?.Index;
+				botControllerIdx ??= newAdminId;
+
 				foreach (var b in bots)
-					b.BotControllerClientIndex = newAdminId;
+					b.BotControllerClientIndex = (int)botControllerIdx;
+
 
 				server.SendLocalizedMessage(NewAdmin, Translation.Arguments("player", newAdminClient.Name));
 				Log.Write("server", $"{newAdminClient.Name} is now the admin.");

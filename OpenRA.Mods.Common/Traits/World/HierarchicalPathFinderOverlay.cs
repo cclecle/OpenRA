@@ -33,7 +33,7 @@ namespace OpenRA.Mods.Common.Traits
 		public override object Create(ActorInitializer init) { return new HierarchicalPathFinderOverlay(this); }
 	}
 
-	public class HierarchicalPathFinderOverlay : IRenderAnnotations, IWorldLoaded, IChatCommand
+	public class HierarchicalPathFinderOverlay : IRenderAnnotations, IWorldLoaded, IChatCommand, IInitRenderer
 	{
 		const string CommandName = "hpf";
 
@@ -41,7 +41,7 @@ namespace OpenRA.Mods.Common.Traits
 		const string CommandDescription = "description-hpf-debug-overlay";
 
 		readonly HierarchicalPathFinderOverlayInfo info;
-		readonly SpriteFont font;
+		SpriteFont font;
 
 		public bool Enabled { get; private set; }
 
@@ -59,6 +59,10 @@ namespace OpenRA.Mods.Common.Traits
 		public HierarchicalPathFinderOverlay(HierarchicalPathFinderOverlayInfo info)
 		{
 			this.info = info;
+		}
+
+		void IInitRenderer.InitRenderer(Actor self)
+		{
 			font = Game.Renderer.Fonts[info.Font];
 		}
 

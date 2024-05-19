@@ -128,25 +128,29 @@ namespace OpenRA.Mods.Common.Traits
 					+ "Try using different smudge types for smudges that use different blend modes.");
 
 			paletteReference = wr.Palette(Info.Palette);
-			render = new TerrainSpriteLayer(w, wr, emptySprite, blendMode, w.Type != WorldType.Editor);
 
-			// Add map smudges
-			foreach (var kv in Info.InitialSmudges)
+			if (Game.Renderer != null)
 			{
-				var s = kv.Value;
-				if (!smudges.ContainsKey(s.Type))
-					continue;
+				render = new TerrainSpriteLayer(w, wr, emptySprite, blendMode, w.Type != WorldType.Editor);
 
-				var seq = smudges[s.Type];
-				var smudge = new Smudge
+				// Add map smudges
+				foreach (var kv in Info.InitialSmudges)
 				{
-					Type = s.Type,
-					Depth = s.Depth,
-					Sequence = seq
-				};
+					var s = kv.Value;
+					if (!smudges.ContainsKey(s.Type))
+						continue;
 
-				tiles.Add(kv.Key, smudge);
-				render.Update(kv.Key, seq, paletteReference, s.Depth);
+					var seq = smudges[s.Type];
+					var smudge = new Smudge
+					{
+						Type = s.Type,
+						Depth = s.Depth,
+						Sequence = seq
+					};
+
+					tiles.Add(kv.Key, smudge);
+					render.Update(kv.Key, seq, paletteReference, s.Depth);
+				}
 			}
 		}
 

@@ -35,6 +35,17 @@
 			"preLaunchTask": "build",
 		},
 		{
+			"name": "Launch ded (D2k)",
+			"type": "coreclr",
+			"request": "launch",
+			"program": "${workspaceRoot}/bin/OpenRA.Server.dll",
+			"windows": {
+				"program": "${workspaceRoot}/bin/OpenRA.Server.exe",
+			},
+			"args": ["Game.Mod=d2k", "Engine.EngineDir=.."],
+			"preLaunchTask": "build",
+		},
+		{
 			"name": "Launch (TS)",
 			"type": "coreclr",
 			"request": "launch",

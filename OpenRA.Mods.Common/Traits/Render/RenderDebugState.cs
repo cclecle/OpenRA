@@ -25,10 +25,11 @@ namespace OpenRA.Mods.Common.Traits.Render
 		public override object Create(ActorInitializer init) { return new RenderDebugState(init.Self, this); }
 	}
 
-	sealed class RenderDebugState : INotifyAddedToWorld, INotifyCreated, IRenderAnnotationsWhenSelected
+	sealed class RenderDebugState : INotifyAddedToWorld, INotifyCreated, IRenderAnnotationsWhenSelected, IInitRenderer
 	{
 		readonly DebugVisualizations debugVis;
-		readonly SpriteFont font;
+		SpriteFont font;
+		readonly RenderDebugStateInfo info;
 		readonly WVec offset;
 		SquadManagerBotModule[] squadManagerModules;
 
@@ -39,10 +40,13 @@ namespace OpenRA.Mods.Common.Traits.Render
 			var buildingInfo = self.Info.TraitInfoOrDefault<BuildingInfo>();
 			var yOffset = buildingInfo?.Dimensions.Y ?? 1;
 			offset = new WVec(0, 512 * yOffset, 0);
-
-			font = Game.Renderer.Fonts[info.Font];
-
+			this.info = info;
 			debugVis = self.World.WorldActor.TraitOrDefault<DebugVisualizations>();
+		}
+
+		void IInitRenderer.InitRenderer(Actor self)
+		{
+			font = Game.Renderer.Fonts[info.Font];
 		}
 
 		void INotifyCreated.Created(Actor self)

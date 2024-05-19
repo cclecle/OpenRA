@@ -136,6 +136,8 @@ namespace OpenRA.Graphics
 
 		public Viewport(WorldRenderer wr, Map map)
 		{
+			if (Game.Renderer == null) return;
+
 			worldRenderer = wr;
 			var grid = Game.ModData.Manifest.Get<MapGrid>();
 			viewportSizes = Game.ModData.Manifest.Get<WorldViewportSizes>();

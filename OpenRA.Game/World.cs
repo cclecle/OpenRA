@@ -229,7 +229,8 @@ namespace OpenRA
 			foreach (var cmp in WorldActor.TraitsImplementing<ICreatePlayers>())
 				cmp.CreatePlayers(this, playerRandom);
 
-			Game.Sound.SoundVolumeModifier = 1.0f;
+			if (!Game.HeadLess)
+				Game.Sound.SoundVolumeModifier = 1.0f;
 
 			gameInfo = new GameInformation
 			{
@@ -272,7 +273,8 @@ namespace OpenRA
 			if (IsLoadingGameSave)
 			{
 				wasLoadingGameSave = true;
-				Game.Sound.DisableAllSounds = true;
+				if (!Game.HeadLess)
+					Game.Sound.DisableAllSounds = true;
 				foreach (var nsr in WorldActor.TraitsImplementing<INotifyGameLoading>())
 					nsr.GameLoading(this);
 			}
@@ -438,7 +440,9 @@ namespace OpenRA
 
 				gameSaveTraitData.Clear();
 
-				Game.Sound.DisableAllSounds = false;
+				if (!Game.HeadLess)
+					Game.Sound.DisableAllSounds = false;
+
 				foreach (var nsr in WorldActor.TraitsImplementing<INotifyGameLoaded>())
 					nsr.GameLoaded(this);
 
@@ -456,7 +460,6 @@ namespace OpenRA
 						a.Tick();
 
 				ApplyToActorsWithTraitTimed<ITick>((actor, trait) => trait.Tick(actor), "Trait");
-
 				effects.DoTimed(e => e.Tick(this), "Effect");
 			}
 
@@ -603,10 +606,13 @@ namespace OpenRA
 
 			frameEndActions.Clear();
 
-			Game.Sound.StopAudio();
-			Game.Sound.StopVideo();
-			if (IsLoadingGameSave)
-				Game.Sound.DisableAllSounds = false;
+			if (!Game.HeadLess)
+			{
+				Game.Sound.StopAudio();
+				Game.Sound.StopVideo();
+				if (IsLoadingGameSave)
+					Game.Sound.DisableAllSounds = false;
+			}
 
 			// Dispose newer actors first, and the world actor last
 			foreach (var a in actors.Values.Reverse())

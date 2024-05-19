@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
+using OpenRA.Network;
 using OpenRA.Primitives;
 using OpenRA.Traits;
 
@@ -20,7 +21,7 @@ namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.World)]
 	[Desc("Spawn base actor at the spawnpoint and support units in an annulus around the base actor. Both are defined at MPStartUnits. Attach this to the world actor.")]
-	public class SpawnStartingUnitsInfo : TraitInfo, Requires<StartingUnitsInfo>, NotBefore<LocomotorInfo>, ILobbyOptions
+	public class SpawnStartingUnitsInfo : TraitInfo, Requires<StartingUnitsInfo>, NotBefore<LocomotorInfo>, ILobbyOptions, ITraitInfoQueryStatRules
 	{
 		public readonly string StartingUnitsClass = "none";
 
@@ -40,6 +41,11 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("Display order for the starting units option in the lobby.")]
 		public readonly int DropdownDisplayOrder = 0;
+		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
+		{
+			var startingUnitsClass = lobbyInfo.GlobalSettings.OptionOrDefault("startingunits", StartingUnitsClass);
+			return new List<Tuple<string, string>> { new Tuple<string, string>("startingunits", startingUnitsClass) };
+		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)
 		{

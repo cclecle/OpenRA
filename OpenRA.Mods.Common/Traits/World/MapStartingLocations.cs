@@ -9,6 +9,7 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
@@ -21,7 +22,7 @@ namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.World)]
 	[Desc("Allows the map to have working spawnpoints. Also controls the 'Separate Team Spawns' checkbox in the lobby options.")]
-	public class MapStartingLocationsInfo : TraitInfo, ILobbyOptions, IAssignSpawnPointsInfo
+	public class MapStartingLocationsInfo : TraitInfo, ILobbyOptions, IAssignSpawnPointsInfo, ITraitInfoQueryStatRules
 	{
 		public readonly WDist InitialExploreRange = WDist.FromCells(5);
 
@@ -46,6 +47,11 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly int SeparateTeamSpawnsCheckboxDisplayOrder = 0;
 
 		public override object Create(ActorInitializer init) { return new MapStartingLocations(this); }
+		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
+		{
+			var enabled = lobbyInfo.GlobalSettings.OptionOrDefault("separateteamspawns", SeparateTeamSpawnsCheckboxEnabled);
+			return new List<Tuple<string, string>> { new Tuple<string, string>("separateteamspawns", enabled.ToString()) };
+		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)
 		{

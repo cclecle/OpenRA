@@ -26,7 +26,7 @@ namespace OpenRA.Mods.Common.Traits
 		public override object Create(ActorInitializer init) { return new CustomTerrainDebugOverlay(this); }
 	}
 
-	sealed class CustomTerrainDebugOverlay : IWorldLoaded, IChatCommand, IRenderAnnotations
+	sealed class CustomTerrainDebugOverlay : IWorldLoaded, IChatCommand, IRenderAnnotations, IInitRenderer
 	{
 		const string CommandName = "custom-terrain";
 
@@ -35,9 +35,12 @@ namespace OpenRA.Mods.Common.Traits
 
 		public bool Enabled;
 
-		readonly SpriteFont font;
+		SpriteFont font;
+		readonly CustomTerrainDebugOverlayInfo info;
 
-		public CustomTerrainDebugOverlay(CustomTerrainDebugOverlayInfo info)
+		public CustomTerrainDebugOverlay(CustomTerrainDebugOverlayInfo info) { this.info = info; }
+
+		void IInitRenderer.InitRenderer(Actor self)
 		{
 			font = Game.Renderer.Fonts[info.Font];
 		}

@@ -127,15 +127,18 @@ namespace OpenRA
 			TranslationProvider.Initialize(this, fileSystem);
 
 			Game.Sound.Initialize(SoundLoaders, fileSystem);
-
-			CursorProvider = new CursorProvider(this);
+			if (!Game.HeadLess)
+			{
+				CursorProvider = new CursorProvider(this);
+			}
 		}
 
 		public IEnumerable<string> Languages { get; }
 
 		public Map PrepareMap(string uid)
 		{
-			LoadScreen?.Display();
+			if (!Game.HeadLess)
+				LoadScreen?.Display();
 
 			if (MapCache[uid].Status != MapStatus.Available)
 				throw new InvalidDataException($"Invalid map uid: {uid}");

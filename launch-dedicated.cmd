@@ -3,7 +3,7 @@
 @echo on
 
 set Name="Dedicated Server"
-set Mod=ra
+set Mod=d2k
 set Map=""
 set ListenPort=1234
 set AdvertiseOnline=True
@@ -15,7 +15,7 @@ set ProfileIDBlacklist=""
 set ProfileIDWhitelist=""
 
 set EnableSingleplayer=False
-set EnableSyncReports=False
+set EnableSyncReports=True
 set EnableGeoIP=True
 set EnableLintChecks=True
 set ShareAnonymizedIPs=True

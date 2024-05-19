@@ -126,7 +126,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				playerPanel.Bounds.Height += objectiveGroup.Bounds.Height;
 			}
 
-			if (!orderManager.LobbyInfo.Clients.Any(c => !c.IsBot && c.Index != orderManager.LocalClient?.Index && c.State != Session.ClientState.Disconnected))
+			if (!orderManager.LobbyInfo.Clients.Any(c => !c.IsBot && !c.IsHiddenObserver && c.Index != orderManager.LocalClient?.Index && c.State != Session.ClientState.Disconnected))
 				statsHeader.Get<LabelWidget>("ACTIONS").Visible = false;
 
 			var teamTemplate = playerPanel.Get<ScrollItemWidget>("TEAM_TEMPLATE");
@@ -281,7 +281,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				}
 			}
 
-			var spectators = orderManager.LobbyInfo.Clients.Where(c => c.IsObserver).ToList();
+			var spectators = orderManager.LobbyInfo.Clients.Where(c => c.IsObserver && !c.IsHiddenObserver).ToList();
 			if (spectators.Count > 0)
 			{
 				var spectatorHeader = ScrollItemWidget.Setup(teamTemplate, () => false, () => { });

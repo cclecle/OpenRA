@@ -21,6 +21,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.VisualBasic;
 using OpenRA;
 using OpenRA.FileFormats;
 using OpenRA.Network;
@@ -34,7 +35,8 @@ namespace OpenRA.Server
 	{
 		WaitingPlayers = 1,
 		GameStarted = 2,
-		ShuttingDown = 3
+		ShuttingDown = 3,
+		Stopped = 4
 	}
 
 	public enum ServerType
@@ -121,6 +123,7 @@ namespace OpenRA.Server
 		public bool IsMultiplayer => Type == ServerType.Dedicated || Type == ServerType.Multiplayer;
 
 		public readonly List<Connection> Conns = new();
+		public readonly QueryStatStatServer<GameStats<PlayerStats>, PlayerStats> instQueryStatStatServer;
 
 		public Session LobbyInfo;
 		public ServerSettings Settings;
@@ -148,7 +151,7 @@ namespace OpenRA.Server
 		readonly BlockingCollection<IServerEvent> events = new();
 
 		ReplayRecorder recorder;
-		GameInformation gameInfo;
+		public GameInformation gameInfo { get; private set; }
 		readonly List<GameInformation.Player> worldPlayers = new();
 		readonly Stopwatch pingUpdated = Stopwatch.StartNew();
 
@@ -315,8 +318,6 @@ namespace OpenRA.Server
 			foreach (var trait in modData.Manifest.ServerTraits)
 				serverTraits.Add(modData.ObjectCreator.CreateObject<ServerTrait>(trait));
 
-			serverTraits.TrimExcess();
-
 			MapStatusCache = new MapStatusCache(modData, MapStatusChanged, type == ServerType.Dedicated && settings.EnableLintChecks);
 
 			playerMessageTracker = new PlayerMessageTracker(this, DispatchOrdersToClient, SendLocalizedMessageTo);
@@ -344,6 +345,18 @@ namespace OpenRA.Server
 				RecordFakeHandshake();
 			}
 
+			if (IsMultiplayer)
+			{
+				instQueryStatStatServer = QueryStatStatServer<GameStats<PlayerStats>, PlayerStats>.GetServer(this);
+				instQueryStatStatServer.StartServer();
+				var trait = new QueryStatUpdateTrait(this);
+				serverTraits.Add(trait);
+				serverTraits.Add(new DebugServerTrait());
+				trait.LobbyInfoSynced(this);
+			}
+
+			serverTraits.TrimExcess();
+
 			new Thread(_ =>
 			{
 				// Note: at least one of these is required to set the initial LobbyInfo.Map and MapStatus
@@ -353,52 +366,94 @@ namespace OpenRA.Server
 				Log.Write("server", $"Initial mod: {ModData.Manifest.Id}");
 				Log.Write("server", $"Initial map: {LobbyInfo.GlobalSettings.Map}");
 
-				while (true)
+				try
 				{
-					if (State != ServerState.ShuttingDown)
+					Log.Write("server", "Starting server loop");
+					while (true)
 					{
-						if (events.TryTake(out var e, 1000))
-							e.Invoke(this);
-
-						// PERF: Dedicated servers need to drain the action queue to remove references blocking the GC from cleaning up disposed objects.
-						if (Type == ServerType.Dedicated)
-							Game.PerformDelayedActions();
-
-						foreach (var t in serverTraits.WithInterface<ITick>())
-							t.Tick(this);
-
-						if (State == ServerState.GameStarted)
+						if (State < ServerState.ShuttingDown)
 						{
-							foreach (var (playerIndex, scale) in orderBuffer.GetTickScales())
-							{
-								var frame = CreateTickScaleFrame(scale);
-								var con = Conns.SingleOrDefault(c => c.PlayerIndex == playerIndex);
+							if (events.TryTake(out var e, 1000))
+								e.Invoke(this);
 
-								if (con != null && con.Validated)
-									DispatchFrameToClient(con, playerIndex, frame);
+							foreach (var t in serverTraits.WithInterface<ITick>())
+								t.Tick(this);
+
+							if (State == ServerState.GameStarted)
+							{
+								foreach (var (playerIndex, scale) in orderBuffer.GetTickScales())
+								{
+									var frame = CreateTickScaleFrame(scale);
+									var con = Conns.SingleOrDefault(c => c.PlayerIndex == playerIndex);
+
+									if (con != null && con.Validated)
+										DispatchFrameToClient(con, playerIndex, frame);
+								}
 							}
+						}
+
+						if (State == ServerState.ShuttingDown)
+						{
+							Log.Write("server", "Server shuting down");
+							EndGame();
+							if (IsMultiplayer)
+								Nat.TryRemovePortForward();
+							break;
 						}
 					}
 
-					if (State == ServerState.ShuttingDown)
-					{
-						EndGame();
-						if (IsMultiplayer)
-							Nat.TryRemovePortForward();
-						break;
-					}
+					foreach (var t in serverTraits.WithInterface<INotifyServerShutdown>())
+						t.ServerShutdown(this);
 				}
+				finally
+				{
+					Log.Write("server", "Server exiting");
 
-				foreach (var t in serverTraits.WithInterface<INotifyServerShutdown>())
-					t.ServerShutdown(this);
+					// Make sure to immediately close connections after the server is shutdown, we don't want to keep clients waiting
+					foreach (var c in Conns)
+						c.Dispose();
 
-				// Make sure to immediately close connections after the server is shutdown, we don't want to keep clients waiting
-				foreach (var c in Conns)
-					c.Dispose();
+					if (Type == ServerType.Dedicated)
+					{
+						Game.Exit();
+						Game.Disconnect();
+					}
 
-				Conns.Clear();
+					Conns.Clear();
+					instQueryStatStatServer.StopServer();
+
+					State = ServerState.Stopped;
+					Log.Write("server", "Server exited");
+				}
 			})
-			{ IsBackground = true }.Start();
+			{ Name = "Server Loop", IsBackground = true }.Start();
+
+			if (Type == ServerType.Dedicated)
+			{
+				SpawnDedicatedServerSpectator();
+			}
+		}
+
+		void SpawnDedicatedServerSpectator()
+		{
+			Game.HeadLess = true;
+			Game.server = this;
+			Game.LocalPlayerProfile = new LocalPlayerProfile(Path.Combine(Platform.SupportDir, Game.Settings.Game.AuthProfile), ModData.Manifest.Get<PlayerDatabase>());
+			var om = Game.JoinDedicatedServerSpectator(GetEndpointForLocalConnection(), Settings.Password, "");
+			new Thread(() =>
+			{
+				Log.AddChannel("client", "dedicated-client.log", true);
+				Log.Write("client", "Spawning DedicatedServerSpectator");
+				try
+				{
+					Game.RunHeadlessLoop();
+				}
+				finally
+				{
+					Log.Write("client", "DedicatedServerSpectator exited");
+				}
+			})
+			{ Name = "Game (server) Loop", IsBackground = true }.Start();
 		}
 
 		int nextPlayerIndex;
@@ -490,6 +545,7 @@ namespace OpenRA.Server
 				var client = new Session.Client
 				{
 					Name = OpenRA.Settings.SanitizedPlayerName(handshake.Client.Name),
+					IsHiddenObserver = handshake.Client.IsHiddenObserver,
 					IPAddress = ipAddress.ToString(),
 					AnonymizedIPAddress = IsMultiplayer && Settings.ShareAnonymizedIPs ? Session.AnonymizeIP(ipAddress) : null,
 					Location = GeoIP.LookupCountry(ipAddress),
@@ -500,7 +556,7 @@ namespace OpenRA.Server
 					SpawnPoint = 0,
 					Team = 0,
 					Handicap = 0,
-					State = Session.ClientState.Invalid,
+					State = handshake.Client.IsHiddenObserver ? Session.ClientState.Ready : Session.ClientState.Invalid,
 				};
 
 				if (ModData.Manifest.Id != handshake.Mod)
@@ -545,10 +601,20 @@ namespace OpenRA.Server
 				{
 					lock (LobbyInfo)
 					{
-						client.Slot = LobbyInfo.FirstEmptySlot();
-						client.IsAdmin = !LobbyInfo.Clients.Any(c => c.IsAdmin);
+						Console.WriteLine($"client.IsHiddenObserver: {client.IsHiddenObserver}");
+						if (!client.IsHiddenObserver)
+						{
+							client.Slot = LobbyInfo.FirstEmptySlot();
+							client.IsAdmin = !LobbyInfo.Clients.Any(c => c.IsAdmin);
+						}
+						else
+						{
+							client.Slot = null;
+							client.IsAdmin = false;
+							Console.WriteLine("IsHiddenObserver client !!!!");
+						}
 
-						if (client.IsObserver && !LobbyInfo.GlobalSettings.AllowSpectators)
+						if (client.IsObserver && !client.IsHiddenObserver && !LobbyInfo.GlobalSettings.AllowSpectators)
 						{
 							SendOrderTo(newConn, "ServerError", Full);
 							DropClient(newConn);
@@ -565,7 +631,7 @@ namespace OpenRA.Server
 						newConn.Validated = true;
 
 						// Disable chat UI to stop the client sending messages that we know we will reject
-						if (!client.IsAdmin && Settings.FloodLimitJoinCooldown > 0)
+						if (!client.IsAdmin && !client.IsHiddenObserver && Settings.FloodLimitJoinCooldown > 0)
 							playerMessageTracker.DisableChatUI(newConn, Settings.FloodLimitJoinCooldown);
 
 						Log.Write("server", $"Client {newConn.PlayerIndex}: Accepted connection from {newConn.EndPoint}.");
@@ -1089,7 +1155,8 @@ namespace OpenRA.Server
 
 						// Rebuild/remap the saved client state
 						// TODO: Multiplayer saves should leave all humans as spectators so they can manually pick slots
-						var adminClientIndex = LobbyInfo.Clients.First(c => c.IsAdmin).Index;
+						var botControllerIdx = LobbyInfo.Clients.FirstOrDefault(c => c.IsHiddenObserver)?.Index;
+						botControllerIdx ??= LobbyInfo.Clients.First(c => c.IsAdmin).Index;;
 						foreach (var kv in GameSave.SlotClients)
 						{
 							if (kv.Value.Bot != null)
@@ -1098,7 +1165,7 @@ namespace OpenRA.Server
 								{
 									Index = ChooseFreePlayerIndex(),
 									State = Session.ClientState.NotReady,
-									BotControllerClientIndex = adminClientIndex
+									BotControllerClientIndex = (int)botControllerIdx
 								};
 
 								kv.Value.ApplyTo(bot);
@@ -1136,7 +1203,10 @@ namespace OpenRA.Server
 			{
 				foreach (var c in LobbyInfo.Clients)
 					if (c.Index == conn.PlayerIndex || (c.Bot != null && c.BotControllerClientIndex == conn.PlayerIndex))
+					{
+						c.LastLatency = latency;
 						c.ConnectionQuality = quality;
+					}
 
 				// Update ping without forcing a full update
 				// Note that syncing pings doesn't trigger INotifySyncLobbyInfo
@@ -1196,9 +1266,10 @@ namespace OpenRA.Server
 				if (Type == ServerType.Dedicated && dropClient.IsAdmin && State == ServerState.WaitingPlayers)
 				{
 					// Remove any bots controlled by the admin
+					// TODO: Make Bot controlled by the server
 					LobbyInfo.Clients.RemoveAll(c => c.Bot != null && c.BotControllerClientIndex == toDrop.PlayerIndex);
 
-					var nextAdmin = LobbyInfo.Clients.Where(c1 => c1.Bot == null)
+					var nextAdmin = LobbyInfo.Clients.Where(c1 => c1.Bot == null && !c1.IsHiddenObserver)
 						.MinByOrDefault(c => c.Index);
 
 					if (nextAdmin != null)

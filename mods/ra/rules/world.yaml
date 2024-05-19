@@ -272,6 +272,7 @@ World:
 	PathFinder:
 	ValidateOrder:
 	DebugPauseState:
+	QueryStatsUpdatePlayerStats:
 	RadarPings:
 	StartGameNotification:
 	ObjectivesPanel:

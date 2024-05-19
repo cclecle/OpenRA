@@ -9,6 +9,7 @@
  */
 #endregion
 
+using System;
 using OpenRA.Network;
 using OpenRA.Traits;
 
@@ -28,19 +29,30 @@ namespace OpenRA.Mods.Common.Traits
 			var subjectClientId = order.Subject.Owner.ClientIndex;
 			var subjectClient = orderManager.LobbyInfo.ClientWithIndex(subjectClientId);
 
+			var hiddenObserverIdx = orderManager.LobbyInfo.Clients.FirstOrDefault(c => c.IsHiddenObserver)?.Index;
+
+
 			if (subjectClient == null)
 			{
 				Log.Write("debug", $"Tick {world.WorldTick}: Order sent to {order.Subject.Owner.PlayerName}: resolved ClientIndex `{subjectClientId}` doesn't exist");
 				return false;
 			}
 
-			var isBotOrder = subjectClient.Bot != null && clientId == subjectClient.BotControllerClientIndex;
+			var isBotOrder = subjectClient.Bot != null && (clientId == subjectClient.BotControllerClientIndex || subjectClient.BotControllerClientIndex == hiddenObserverIdx);
 
 			// Drop orders from players who shouldn't be able to control this actor
 			// This may be because the owner changed within the last net tick,
 			// or, less likely, the client may be trying to do something malicious.
 			if (subjectClientId != clientId && !isBotOrder)
+			{
+				Console.WriteLine($"=======> Dropped order {order.OrderString} !!");
+				Console.WriteLine($"hiddenObserverIdx: {hiddenObserverIdx} !!");
+				Console.WriteLine($"isBotOrder: {isBotOrder} !!");
+				Console.WriteLine($"subjectClientId: {subjectClientId} !!");
+				Console.WriteLine($"clientId: {clientId} !!");
+				Console.WriteLine($"subjectClient.BotControllerClientIndex: {subjectClient.BotControllerClientIndex} !!");
 				return false;
+			}
 
 			return order.Subject.AcceptsOrder(order.OrderString);
 		}

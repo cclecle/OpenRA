@@ -42,21 +42,25 @@ namespace OpenRA.Mods.Common.Traits.Render
 		}
 	}
 
-	public class WithNameTagDecoration : WithDecorationBase<WithNameTagDecorationInfo>, INotifyOwnerChanged
+	public class WithNameTagDecoration : WithDecorationBase<WithNameTagDecorationInfo>, INotifyOwnerChanged, IInitRenderer
 	{
-		readonly SpriteFont font;
+		SpriteFont font;
 		readonly WithNameTagDecorationInfo info;
 		string name;
 
 		public WithNameTagDecoration(Actor self, WithNameTagDecorationInfo info)
 			: base(self, info)
 		{
-			font = Game.Renderer.Fonts[info.Font];
 			this.info = info;
 
 			name = self.Owner.PlayerName;
 			if (name.Length > info.MaxLength)
 				name = name[..info.MaxLength];
+		}
+
+		void IInitRenderer.InitRenderer(Actor self)
+		{
+			font = Game.Renderer.Fonts[info.Font];
 		}
 
 		protected override IEnumerable<IRenderable> RenderDecoration(Actor self, WorldRenderer wr, int2 screenPos)

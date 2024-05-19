@@ -23,21 +23,19 @@ namespace OpenRA.Mods.Cnc.Traits
 		public override object Create(ActorInitializer init) { return new ChronoVortexRenderer(init.Self); }
 	}
 
-	public sealed class ChronoVortexRenderer : IRenderPostProcessPass
+	public sealed class ChronoVortexRenderer : IRenderPostProcessPass, IInitRenderer
 	{
-		readonly Renderer renderer;
-		readonly IShader shader;
-		readonly IVertexBuffer<RenderPostProcessPassTexturedVertex> vortexBuffer;
-		readonly Sheet vortexSheet;
+		IShader shader;
+		IVertexBuffer<RenderPostProcessPassTexturedVertex> vortexBuffer;
+		Sheet vortexSheet;
 		readonly List<(float3, int)> vortices = new();
 
-		public ChronoVortexRenderer(Actor self)
+		void IInitRenderer.InitRenderer(Actor self)
 		{
-			renderer = Game.Renderer;
-			shader = renderer.CreateShader(new RenderPostProcessPassTexturedShaderBindings("vortex"));
+			shader = Game.Renderer.CreateShader(new RenderPostProcessPassTexturedShaderBindings("vortex"));
 
 			vortexSheet = new Sheet(SheetType.BGRA, new Size(512, 512));
-			vortexBuffer = renderer.CreateVertexBuffer<RenderPostProcessPassTexturedVertex>(288);
+			vortexBuffer = Game.Renderer.CreateVertexBuffer<RenderPostProcessPassTexturedVertex>(288);
 			var vertices = new RenderPostProcessPassTexturedVertex[288];
 
 			var data = vortexSheet.GetData();
@@ -76,6 +74,8 @@ namespace OpenRA.Mods.Cnc.Traits
 			vortexSheet.CommitBufferedData();
 		}
 
+		public ChronoVortexRenderer(Actor self) { }
+
 		public void DrawVortex(float3 pos, int frame)
 		{
 			vortices.Add((pos, frame));
@@ -87,9 +87,9 @@ namespace OpenRA.Mods.Cnc.Traits
 		void IRenderPostProcessPass.Draw(WorldRenderer wr)
 		{
 			var scroll = wr.Viewport.TopLeft;
-			var size = renderer.WorldFrameBufferSize;
-			var width = 2f / (renderer.WorldDownscaleFactor * size.Width);
-			var height = 2f / (renderer.WorldDownscaleFactor * size.Height);
+			var size = Game.Renderer.WorldFrameBufferSize;
+			var width = 2f / (Game.Renderer.WorldDownscaleFactor * size.Width);
+			var height = 2f / (Game.Renderer.WorldDownscaleFactor * size.Height);
 
 			shader.SetVec("Scroll", scroll.X, scroll.Y);
 			shader.SetVec("p1", width, height);
@@ -100,7 +100,7 @@ namespace OpenRA.Mods.Cnc.Traits
 			foreach (var (pos, frame) in vortices)
 			{
 				shader.SetVec("Pos", pos.X, pos.Y);
-				renderer.DrawBatch(vortexBuffer, shader, 6 * frame, 6, PrimitiveType.TriangleList);
+				Game.Renderer.DrawBatch(vortexBuffer, shader, 6 * frame, 6, PrimitiveType.TriangleList);
 			}
 
 			vortices.Clear();

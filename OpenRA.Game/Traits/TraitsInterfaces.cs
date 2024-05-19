@@ -108,6 +108,8 @@ namespace OpenRA.Traits
 	public interface ITick { void Tick(Actor self); }
 	[RequireExplicitImplementation]
 	public interface ITickRender { void TickRender(WorldRenderer wr, Actor self); }
+	public interface IInitRenderer { void InitRenderer(Actor self); }
+
 	public interface IRender
 	{
 		IEnumerable<IRenderable> Render(Actor self, WorldRenderer wr);
@@ -353,6 +355,24 @@ namespace OpenRA.Traits
 		public override object Create(ActorInitializer init) { return new T(); }
 	}
 
+	public interface ITraitInfoQueryStatRules : ITraitInfoInterface { IReadOnlyCollection<Tuple<string, string>> GetRules(Session lobbyInfo); }
+
+	public struct PlayerQueryStats
+	{
+		public int Earned;
+		public int UnitsDead;
+		public int UnitsKilled;
+		public int BuildingsKilled;
+		public int BuildingsDead;
+		public int ArmyValue;
+		public int AssetsValue;
+		public int Experience;
+		public int OrderCount;
+	}
+
+	public interface IPlayerQueryStatsUpdate { PlayerQueryStats PlayerStatsUpdate(); }
+
+	public interface IIsServerOnly { }
 	public interface ILobbyCustomRulesIgnore { }
 
 	[SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Not a real interface, but more like a tag.")]

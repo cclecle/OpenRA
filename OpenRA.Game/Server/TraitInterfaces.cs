@@ -31,7 +31,10 @@ namespace OpenRA.Server
 	{
 		public bool InterpretCommand(Server server, Connection conn, Session.Client client, string cmd)
 		{
-			Console.WriteLine("Server received command from player {1}: {0}", cmd, conn.PlayerIndex);
+			lock (server.LobbyInfo)
+			{
+				Console.WriteLine("Server received command from player {0} / client {1}: {2}", conn.PlayerIndex, server.LobbyInfo.ClientWithIndex(conn.PlayerIndex), cmd);
+			}
 			return false;
 		}
 

@@ -9,9 +9,12 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using OpenRA.Mods.Common.Widgets;
+using OpenRA.Network;
 using OpenRA.Traits;
 using OpenRA.Widgets;
 
@@ -19,7 +22,7 @@ namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.World)]
 	[Desc("This trait allows setting a time limit on matches. Attach this to the World actor.")]
-	public class TimeLimitManagerInfo : TraitInfo, ILobbyOptions, IRulesetLoaded
+	public class TimeLimitManagerInfo : TraitInfo, ILobbyOptions, IRulesetLoaded, ITraitInfoQueryStatRules
 	{
 		[TranslationReference]
 		[Desc("Label that will be shown for the time limit option in the lobby.")]
@@ -81,6 +84,16 @@ namespace OpenRA.Mods.Common.Traits
 
 		[TranslationReference("minutes")]
 		const string TimeLimitOption = "options-time-limit.options";
+		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
+		{
+			var nfi = new NumberFormatInfo
+			{
+				NumberDecimalSeparator = "."
+			};
+
+			var timelimit = lobbyInfo.GlobalSettings.OptionOrDefault("timelimit", TimeLimitDefault.ToString(nfi));
+			return new List<Tuple<string, string>> { new Tuple<string, string>("timelimit", timelimit) };
+		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)
 		{

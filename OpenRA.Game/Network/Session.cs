@@ -106,12 +106,12 @@ namespace OpenRA.Network
 
 		public IEnumerable<Client> NonBotClients
 		{
-			get { return Clients.Where(c => c.Bot == null); }
+			get { return Clients.Where(c => c.Bot == null && !c.IsHiddenObserver); }
 		}
 
 		public IEnumerable<Client> NonBotPlayers
 		{
-			get { return Clients.Where(c => c.Bot == null && c.Slot != null); }
+			get { return Clients.Where(c => c.Bot == null && !c.IsObserver); }
 		}
 
 		public enum ClientState { NotReady, Invalid, Ready, Disconnected = 1000 }
@@ -139,6 +139,7 @@ namespace OpenRA.Network
 			public string AnonymizedIPAddress;
 			public string Location;
 			public ConnectionQuality ConnectionQuality = ConnectionQuality.Good;
+			public int LastLatency;
 
 			public ClientState State = ClientState.Invalid;
 			public int Team;
@@ -149,7 +150,8 @@ namespace OpenRA.Network
 			public bool IsAdmin;
 			public bool IsReady => State == ClientState.Ready;
 			public bool IsInvalid => State == ClientState.Invalid;
-			public bool IsObserver => Slot == null;
+			public bool IsObserver => IsHiddenObserver || (Slot == null);
+			public bool IsHiddenObserver;
 			public bool IsBot => Bot != null;
 
 			// Linked to the online player database

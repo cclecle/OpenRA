@@ -9,14 +9,16 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
+using OpenRA.Network;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.Player)]
 	[Desc("Enables defined prerequisites at game start for all players if the checkbox is enabled.")]
-	public class LobbyPrerequisiteCheckboxInfo : TraitInfo, ILobbyOptions, ITechTreePrerequisiteInfo
+	public class LobbyPrerequisiteCheckboxInfo : TraitInfo, ILobbyOptions, ITechTreePrerequisiteInfo, ITraitInfoQueryStatRules
 	{
 		[FieldLoader.Require]
 		[Desc("Internal id for this checkbox.")]
@@ -48,6 +50,11 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly HashSet<string> Prerequisites = new();
 
 		IEnumerable<string> ITechTreePrerequisiteInfo.Prerequisites(ActorInfo info) { return Prerequisites; }
+		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
+		{
+			var enabled = lobbyInfo.GlobalSettings.OptionOrDefault(ID, Enabled);
+			return new List<Tuple<string, string>> { new Tuple<string, string>(ID, enabled.ToString()) };
+		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)
 		{

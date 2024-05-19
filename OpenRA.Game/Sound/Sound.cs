@@ -49,7 +49,7 @@ namespace OpenRA
 
 		public Sound(IPlatform platform, SoundSettings soundSettings)
 		{
-			soundEngine = platform.CreateSound(soundSettings.Device);
+			soundEngine = Game.IsHeadLess ? new DummySoundEngine() : platform.CreateSound(soundSettings.Device);
 			DummyEngine = soundEngine.Dummy;
 
 			if (soundSettings.Mute)

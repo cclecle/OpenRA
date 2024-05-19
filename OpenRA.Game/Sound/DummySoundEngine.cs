@@ -11,9 +11,9 @@
 
 using System.IO;
 
-namespace OpenRA.Platforms.Default
+namespace OpenRA
 {
-	sealed class DummySoundEngine : ISoundEngine
+	public sealed class DummySoundEngine : ISoundEngine
 	{
 		public bool Dummy => true;
 

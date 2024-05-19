@@ -37,7 +37,7 @@ namespace OpenRA.Mods.Common.Traits
 		public override object Create(ActorInitializer init) { return new PathFinderOverlay(this); }
 	}
 
-	public class PathFinderOverlay : IRenderAnnotations, IWorldLoaded, IChatCommand
+	public class PathFinderOverlay : IRenderAnnotations, IWorldLoaded, IChatCommand, IInitRenderer
 	{
 		const string CommandName = "path-debug";
 
@@ -64,7 +64,7 @@ namespace OpenRA.Mods.Common.Traits
 		}
 
 		readonly PathFinderOverlayInfo info;
-		readonly SpriteFont font;
+		SpriteFont font;
 		public bool Enabled { get; private set; }
 
 		Actor forActor;
@@ -80,6 +80,10 @@ namespace OpenRA.Mods.Common.Traits
 		public PathFinderOverlay(PathFinderOverlayInfo info)
 		{
 			this.info = info;
+		}
+
+		void IInitRenderer.InitRenderer(Actor self)
+		{
 			font = Game.Renderer.Fonts[info.Font];
 		}
 

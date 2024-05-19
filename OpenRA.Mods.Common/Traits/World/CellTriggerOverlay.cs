@@ -29,7 +29,7 @@ namespace OpenRA.Mods.Common.Traits
 		public override object Create(ActorInitializer init) { return new CellTriggerOverlay(this); }
 	}
 
-	public class CellTriggerOverlay : IRenderAnnotations, IWorldLoaded, IChatCommand
+	public class CellTriggerOverlay : IRenderAnnotations, IWorldLoaded, IChatCommand, IInitRenderer
 	{
 		const string CommandName = "triggers";
 
@@ -38,13 +38,22 @@ namespace OpenRA.Mods.Common.Traits
 
 		bool enabled;
 
-		readonly SpriteFont font;
+		readonly CellTriggerOverlayInfo info;
+
+		SpriteFont font;
 		readonly Color color;
 
 		public CellTriggerOverlay(CellTriggerOverlayInfo info)
 		{
-			font = Game.Renderer.Fonts[info.Font];
+			if (Game.Renderer == null) return;
+
+			this.info = info;
 			color = info.Color;
+		}
+
+		void IInitRenderer.InitRenderer(Actor self)
+		{
+			font = Game.Renderer.Fonts[info.Font];
 		}
 
 		void IWorldLoaded.WorldLoaded(World w, WorldRenderer wr)

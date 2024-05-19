@@ -9,15 +9,17 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using OpenRA.Network;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.World)]
 	[Desc("Controls the game speed, tech level, and short game lobby options.")]
-	public class MapOptionsInfo : TraitInfo, ILobbyOptions, IRulesetLoaded
+	public class MapOptionsInfo : TraitInfo, ILobbyOptions, IRulesetLoaded, ITraitInfoQueryStatRules
 	{
 		[TranslationReference]
 		[Desc("Descriptive label for the short game checkbox in the lobby.")]
@@ -78,6 +80,16 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("Display order for the game speed option in the lobby.")]
 		public readonly int GameSpeedDropdownDisplayOrder = 0;
+		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
+		{
+			var shortGameCheckboxEnabled = lobbyInfo.GlobalSettings.OptionOrDefault("shortgame", ShortGameCheckboxEnabled);
+			var techLevel = lobbyInfo.GlobalSettings.OptionOrDefault("techlevel", TechLevel);
+			return new List<Tuple<string, string>>
+			{
+				new Tuple<string, string>("techlevel", techLevel),
+				new Tuple<string, string>("shortgame", shortGameCheckboxEnabled.ToString())
+			};
+		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)
 		{

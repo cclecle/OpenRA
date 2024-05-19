@@ -43,7 +43,8 @@ namespace OpenRA.Traits
 		{
 			if (shakeEffects.Count > 0)
 			{
-				worldRenderer.Viewport.Scroll(GetScrollOffset(), true);
+				if	(!Game.IsHeadLess)
+					worldRenderer.Viewport.Scroll(GetScrollOffset(), true);
 				shakeEffects.RemoveAll(t => t.ExpiryTime == ticks);
 			}
 

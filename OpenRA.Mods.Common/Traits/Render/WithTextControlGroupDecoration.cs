@@ -45,17 +45,21 @@ namespace OpenRA.Mods.Common.Traits.Render
 		public override object Create(ActorInitializer init) { return new WithTextControlGroupDecoration(init.Self, this); }
 	}
 
-	public class WithTextControlGroupDecoration : IDecoration
+	public class WithTextControlGroupDecoration : IDecoration, IInitRenderer
 	{
 		readonly WithTextControlGroupDecorationInfo info;
-		readonly SpriteFont font;
+		SpriteFont font;
 		readonly CachedTransform<int, string> label;
 
 		public WithTextControlGroupDecoration(Actor self, WithTextControlGroupDecorationInfo info)
 		{
 			this.info = info;
-			font = Game.Renderer.Fonts[info.Font];
 			label = new CachedTransform<int, string>(g => self.World.ControlGroups.Groups[g]);
+		}
+
+		void IInitRenderer.InitRenderer(Actor self)
+		{
+			font = Game.Renderer.Fonts[info.Font];
 		}
 
 		bool IDecoration.RequiresSelection => true;

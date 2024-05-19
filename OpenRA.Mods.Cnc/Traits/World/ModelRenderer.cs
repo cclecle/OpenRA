@@ -41,7 +41,7 @@ namespace OpenRA.Mods.Cnc.Traits
 		public override object Create(ActorInitializer init) { return new ModelRenderer(this, init.Self); }
 	}
 
-	public sealed class ModelRenderer : IDisposable, IRenderer, INotifyActorDisposing
+	public sealed class ModelRenderer : IDisposable, IRenderer, INotifyActorDisposing, IInitRenderer
 	{
 		// Static constants
 		static readonly float[] ShadowDiffuse = new float[] { 0, 0, 0 };
@@ -52,15 +52,13 @@ namespace OpenRA.Mods.Cnc.Traits
 		static readonly float[] FlipMtx = Util.ScaleMatrix(1, -1, 1);
 		static readonly float[] ShadowScaleFlipMtx = Util.ScaleMatrix(2, -2, 2);
 		static readonly float[] GroundNormal = { 0, 0, 1, 1 };
-
-		readonly Renderer renderer;
-		readonly IShader shader;
-		public readonly IModelCache ModelCache;
+		IShader shader;
+		public IModelCache ModelCache;
 
 		readonly Dictionary<Sheet, IFrameBuffer> mappedBuffers = new();
 		readonly Stack<KeyValuePair<Sheet, IFrameBuffer>> unmappedBuffers = new();
 		readonly List<(Sheet Sheet, Action Func)> doRender = new();
-		readonly int sheetSize;
+		int sheetSize;
 
 		SheetBuilder sheetBuilderForFrame;
 		bool isInFrame;
@@ -71,11 +69,11 @@ namespace OpenRA.Mods.Cnc.Traits
 			shader.SetVec("PaletteRows", palette.Height);
 		}
 
-		public ModelRenderer(ModelRendererInfo info, Actor self)
+		public ModelRenderer(ModelRendererInfo info, Actor self) { }
+		void IInitRenderer.InitRenderer(Actor self)
 		{
-			renderer = Game.Renderer;
-			shader = renderer.CreateShader(new ModelShaderBindings());
-			renderer.WorldRenderers = renderer.WorldRenderers.Append(this).ToArray();
+			shader = Game.Renderer.CreateShader(new ModelShaderBindings());
+			Game.Renderer.WorldRenderers = Game.Renderer.WorldRenderers.Append(this).ToArray();
 
 			ModelCache = self.Trait<IModelCache>();
 
@@ -90,6 +88,7 @@ namespace OpenRA.Mods.Cnc.Traits
 			};
 
 			shader.SetMatrix("View", view);
+
 		}
 
 		public ModelRenderProxy RenderAsync(
@@ -292,7 +291,7 @@ namespace OpenRA.Mods.Cnc.Traits
 			shader.SetVec("DiffuseLight", diffuseLight, 3);
 
 			shader.PrepareRender();
-			renderer.DrawBatch(cache.VertexBuffer, shader, renderData.Start, renderData.Count, PrimitiveType.TriangleList);
+			Game.Renderer.DrawBatch(cache.VertexBuffer, shader, renderData.Start, renderData.Count, PrimitiveType.TriangleList);
 		}
 
 		public void BeginFrame()
@@ -368,7 +367,7 @@ namespace OpenRA.Mods.Cnc.Traits
 				return kv.Key;
 			}
 
-			var framebuffer = renderer.CreateFrameBuffer(new Size(sheetSize, sheetSize));
+			var framebuffer = Game.Renderer.CreateFrameBuffer(new Size(sheetSize, sheetSize));
 			var sheet = new Sheet(SheetType.BGRA, framebuffer.Texture);
 			mappedBuffers.Add(sheet, framebuffer);
 
@@ -385,7 +384,7 @@ namespace OpenRA.Mods.Cnc.Traits
 
 			mappedBuffers.Clear();
 			unmappedBuffers.Clear();
-			renderer.WorldRenderers = renderer.WorldRenderers.Where(r => r != this).ToArray();
+			Game.Renderer.WorldRenderers = Game.Renderer.WorldRenderers.Where(r => r != this).ToArray();
 		}
 
 		void INotifyActorDisposing.Disposing(Actor a)

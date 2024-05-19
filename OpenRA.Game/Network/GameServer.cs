@@ -40,7 +40,7 @@ namespace OpenRA.Network
 			Team = c.Team;
 			SpawnPoint = c.SpawnPoint;
 			IsAdmin = c.IsAdmin;
-			IsSpectator = c.Slot == null && c.Bot == null;
+			IsSpectator = c.IsObserver && c.Bot == null;
 			IsBot = c.Bot != null;
 		}
 	}
@@ -227,7 +227,7 @@ namespace OpenRA.Network
 			ModIcon32 = manifest.Metadata.WebIcon32;
 			Protected = !string.IsNullOrEmpty(server.Settings.Password);
 			Authentication = server.Settings.RequireAuthentication || server.Settings.ProfileIDWhitelist.Length > 0;
-			Clients = server.LobbyInfo.Clients.Select(c => new GameClient(c)).ToArray();
+			Clients = server.LobbyInfo.Clients.Where(c => !c.IsHiddenObserver).Select(c => new GameClient(c)).ToArray();
 			DisabledSpawnPoints = server.LobbyInfo.DisabledSpawnPoints?.ToArray() ?? Array.Empty<int>();
 		}
 

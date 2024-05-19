@@ -818,7 +818,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			if (game.State == (int)ServerState.WaitingPlayers)
 				return game.Protected ? passwordProtected : waitingForPlayers;
 
-			if (game.State == (int)ServerState.ShuttingDown)
+			if (game.State >= (int)ServerState.ShuttingDown)
 				return serverShuttingDown;
 
 			return unknownServerState;

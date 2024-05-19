@@ -24,14 +24,14 @@ namespace OpenRA.Mods.Common.Traits
 		public override object Create(ActorInitializer init) { return new ExitsDebugOverlayManager(init.Self, this); }
 	}
 
-	public class ExitsDebugOverlayManager : IWorldLoaded, IChatCommand
+	public class ExitsDebugOverlayManager : IWorldLoaded, IChatCommand, IInitRenderer
 	{
 		const string CommandName = "exits-overlay";
 
 		[TranslationReference]
 		const string CommandDescription = "description-exits-overlay";
 
-		public readonly SpriteFont Font;
+		public SpriteFont Font;
 		public readonly ExitsDebugOverlayManagerInfo Info;
 
 		public bool Enabled;
@@ -42,9 +42,12 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			this.self = self;
 			Info = info;
+		}
 
-			if (!Game.Renderer.Fonts.TryGetValue(info.Font, out Font))
-				throw new YamlException($"Could not find font '{info.Font}'");
+		void IInitRenderer.InitRenderer(Actor self)
+		{
+			if (!Game.Renderer.Fonts.TryGetValue(Info.Font, out Font))
+				throw new YamlException($"Could not find font '{Info.Font}'");
 		}
 
 		void IWorldLoaded.WorldLoaded(World w, WorldRenderer wr)

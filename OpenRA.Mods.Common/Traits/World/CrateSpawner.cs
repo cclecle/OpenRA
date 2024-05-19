@@ -13,13 +13,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Mods.Common.Activities;
+using OpenRA.Network;
 using OpenRA.Primitives;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.World)]
-	public class CrateSpawnerInfo : TraitInfo, ILobbyOptions
+	public class CrateSpawnerInfo : TraitInfo, ILobbyOptions, ITraitInfoQueryStatRules
 	{
 		[TranslationReference]
 		[Desc("Descriptive label for the crates checkbox in the lobby.")]
@@ -78,6 +79,12 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("Spawn and remove the plane this far outside the map.")]
 		public readonly WDist Cordon = new(5120);
+
+		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
+		{
+			var enabled = lobbyInfo.GlobalSettings.OptionOrDefault("crates", CheckboxEnabled);
+			return new List<Tuple<string, string>> { new Tuple<string, string>("crates", enabled.ToString()) };
+		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)
 		{

@@ -43,16 +43,23 @@ namespace OpenRA.Mods.Common.Traits.Render
 		}
 	}
 
-	public class WithTextDecoration : WithDecorationBase<WithTextDecorationInfo>, INotifyOwnerChanged
+	public class WithTextDecoration : WithDecorationBase<WithTextDecorationInfo>, INotifyOwnerChanged, IInitRenderer
 	{
-		readonly SpriteFont font;
+		SpriteFont font;
 		Color color;
+
+		readonly WithTextDecorationInfo info;
 
 		public WithTextDecoration(Actor self, WithTextDecorationInfo info)
 			: base(self, info)
 		{
-			font = Game.Renderer.Fonts[info.Font];
+			this.info = info;
 			color = info.UsePlayerColor ? self.OwnerColor() : info.Color;
+		}
+
+		void IInitRenderer.InitRenderer(Actor self)
+		{
+			font = Game.Renderer.Fonts[info.Font];
 		}
 
 		protected override IEnumerable<IRenderable> RenderDecoration(Actor self, WorldRenderer wr, int2 screenPos)

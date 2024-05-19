@@ -11,8 +11,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using OpenRA.Network;
@@ -45,8 +47,8 @@ namespace OpenRA.Server
 			if (!string.IsNullOrEmpty(supportDirArg))
 				Platform.OverrideSupportDir(supportDirArg);
 
-			Log.AddChannel("debug", "dedicated-debug.log", true);
 			Log.AddChannel("perf", "dedicated-perf.log", true);
+			Log.AddChannel("debug", "dedicated-debug.log", true);
 			Log.AddChannel("server", "dedicated-server.log", true);
 			Log.AddChannel("nat", "dedicated-nat.log", true);
 			Log.AddChannel("geoip", "dedicated-geoip.log", true);
@@ -68,6 +70,9 @@ namespace OpenRA.Server
 			// This isn't nearly as bad as ModData, but is still not very nice.
 			Game.InitializeSettings(arguments);
 			var settings = Game.Settings.Server;
+			Game.HeadLess = true;
+			var platform = Game.CreatePlatform(Game.Settings.Game.Platform);
+			Game.Sound = new Sound(platform, Game.Settings.Sound);
 
 			Nat.Initialize();
 
@@ -93,16 +98,30 @@ namespace OpenRA.Server
 				var server = new Server(endpoints, settings, modData, ServerType.Dedicated);
 
 				GC.Collect();
-				while (true)
+
+				var watch = Stopwatch.StartNew();
+				while ((server.State != ServerState.WaitingPlayers) && (watch.ElapsedMilliseconds < 30000)) { Thread.Sleep(1000); }
+				if (watch.ElapsedMilliseconds >= 30000) throw new Exception("Server Start Error.");
+
+				while (server.State == ServerState.WaitingPlayers) { Thread.Sleep(1000); }
+
+				while (server.State == ServerState.GameStarted)
 				{
 					Thread.Sleep(1000);
-					if (server.State == ServerState.GameStarted && server.Conns.Count < 1)
+
+					if (server.State == ServerState.GameStarted && server.LobbyInfo.NonBotClients.ToArray().Length == 0)
 					{
 						WriteLineWithTimeStamp("No one is playing, shutting down...");
 						server.Shutdown();
 						break;
 					}
 				}
+
+				WriteLineWithTimeStamp("Server exited.");
+
+				watch = Stopwatch.StartNew();
+				while (((server.State != ServerState.Stopped) || (Game.state == RunStatus.Running)) && (watch.ElapsedMilliseconds < 10000)) { Thread.Sleep(1000); }
+				if (watch.ElapsedMilliseconds >= 30000) throw new Exception("Server Stop Error.");
 
 				modData.Dispose();
 				WriteLineWithTimeStamp("Starting a new server instance...");

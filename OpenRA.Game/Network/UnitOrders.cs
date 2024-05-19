@@ -18,6 +18,8 @@ namespace OpenRA.Network
 {
 	public static class UnitOrders
 	{
+		public static bool CreateHiddenObserver = false;
+
 		public const int ChatMessageMaxLength = 2500;
 
 		[TranslationReference("player")]
@@ -262,7 +264,8 @@ namespace OpenRA.Network
 					// Otherwise send the handshake with our current settings and let the server reject us
 					var info = new Session.Client()
 					{
-						Name = Game.Settings.Player.Name,
+						Name = CreateHiddenObserver ? "HiddenObserver" : Game.Settings.Player.Name,
+						IsHiddenObserver = CreateHiddenObserver,
 						PreferredColor = Game.Settings.Player.Color,
 						Color = Game.Settings.Player.Color,
 						Faction = "Random",
@@ -270,7 +273,6 @@ namespace OpenRA.Network
 						Team = 0,
 						State = Session.ClientState.Invalid
 					};
-
 					var localProfile = Game.LocalPlayerProfile;
 					var response = new HandshakeResponse()
 					{

@@ -13,12 +13,13 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using OpenRA.Network;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.Player | SystemActors.EditorPlayer)]
-	public class PlayerResourcesInfo : TraitInfo, ILobbyOptions
+	public class PlayerResourcesInfo : TraitInfo, ILobbyOptions, ITraitInfoQueryStatRules
 	{
 		[Desc("Descriptive label for the starting cash option in the lobby.")]
 		public readonly string DefaultCashDropdownLabel = "Starting Cash";
@@ -60,6 +61,11 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("Monetary value of each resource type.", "Dictionary of [resource type]: [value per unit].")]
 		public readonly Dictionary<string, int> ResourceValues = new();
+		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
+		{
+			var defaultCash = lobbyInfo.GlobalSettings.OptionOrDefault("startingcash", DefaultCash.ToStringInvariant());
+			return new List<Tuple<string, string>> { new Tuple<string, string>("startingcash", defaultCash) };
+		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)
 		{

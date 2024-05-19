@@ -274,7 +274,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					var botTypes = map.PlayerActorInfo.TraitInfos<IBotInfo>().Select(t => t.Type);
 					var options = new Dictionary<string, IEnumerable<DropDownOption>>();
 
-					var botController = orderManager.LobbyInfo.Clients.FirstOrDefault(c => c.IsAdmin);
+					var botController = orderManager.LobbyInfo.Clients.FirstOrDefault(c => c.IsHiddenObserver);
+					botController ??= orderManager.LobbyInfo.Clients.FirstOrDefault(c => c.IsAdmin);
 					if (orderManager.LobbyInfo.Slots.Values.Any(s => s.AllowBots))
 					{
 						var botOptions = new List<DropDownOption>()
@@ -768,7 +769,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			}
 
 			// Add spectators
-			foreach (var client in orderManager.LobbyInfo.Clients.Where(client => client.Slot == null))
+			foreach (var client in orderManager.LobbyInfo.Clients.Where(client => client.IsObserver && !client.IsHiddenObserver))
 			{
 				Widget template = null;
 				var c = client;

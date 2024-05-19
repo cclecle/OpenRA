@@ -44,13 +44,14 @@ namespace OpenRA.Mods.Common.Effects
 			this.gravity = gravity;
 			this.visibleThroughFog = visibleThroughFog;
 			this.facing = facing;
+			this.lifetime = Util.RandomInRange(world.LocalRandom, lifetime);
+			this.palette = isPlayerPalette ? palette + emitter.Owner.InternalName : palette;
+
+			if (Game.IsHeadLess) return;
 
 			anim = new Animation(world, image, () => facing);
 			anim.PlayRepeating(sequences.Random(world.LocalRandom));
 			world.ScreenMap.Add(this, pos, anim.Image);
-			this.lifetime = Util.RandomInRange(world.LocalRandom, lifetime);
-
-			this.palette = isPlayerPalette ? palette + emitter.Owner.InternalName : palette;
 		}
 
 		public void Tick(World world)
@@ -60,6 +61,8 @@ namespace OpenRA.Mods.Common.Effects
 				world.AddFrameEndTask(w => { w.Remove(this); w.ScreenMap.Remove(this); });
 				return;
 			}
+
+			if (Game.IsHeadLess) return;
 
 			if (--ticks < 0)
 			{

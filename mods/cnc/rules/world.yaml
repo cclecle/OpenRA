@@ -260,6 +260,7 @@ World:
 	PathFinder:
 	ValidateOrder:
 	DebugPauseState:
+	QueryStatsUpdatePlayerStats:
 	ObjectivesPanel:
 		PanelName: SKIRMISH_STATS
 	RadarPings:

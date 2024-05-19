@@ -29,6 +29,7 @@ namespace OpenRA.Graphics
 
 		public HardwarePalette()
 		{
+			if (Game.Renderer == null) return;
 			Texture = Game.Renderer.Context.CreateTexture();
 			ColorShifts = Game.Renderer.Context.CreateTexture();
 		}

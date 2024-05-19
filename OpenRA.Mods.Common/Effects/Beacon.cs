@@ -44,6 +44,8 @@ namespace OpenRA.Mods.Common.Effects
 			this.duration = duration;
 			this.delay = delay;
 
+			if (Game.IsHeadLess) return;
+
 			if (!string.IsNullOrEmpty(beaconSequence))
 			{
 				beacon = new Animation(owner.World, beaconCollection);
@@ -70,6 +72,8 @@ namespace OpenRA.Mods.Common.Effects
 		{
 			this.posterPalette = posterPalette;
 
+			if (Game.IsHeadLess) return;
+
 			if (posterType != null)
 			{
 				poster = new Animation(owner.World, posterCollection);
@@ -88,6 +92,9 @@ namespace OpenRA.Mods.Common.Effects
 			if (delay-- > 0)
 				return;
 
+			if (duration > 0 && duration <= tick++)
+				owner.World.AddFrameEndTask(w => w.Remove(this));
+
 			arrowHeight += arrowSpeed;
 			var clamped = arrowHeight.Clamp(0, MaxArrowHeight);
 			if (arrowHeight != clamped)
@@ -96,13 +103,13 @@ namespace OpenRA.Mods.Common.Effects
 				arrowSpeed *= -1;
 			}
 
+			if (Game.IsHeadLess) return;
+
 			arrow?.Tick();
 			beacon?.Tick();
 			circles?.Tick();
 			clock?.Tick();
 
-			if (duration > 0 && duration <= tick++)
-				owner.World.AddFrameEndTask(w => w.Remove(this));
 		}
 
 		IEnumerable<IRenderable> IEffect.Render(WorldRenderer r) { return SpriteRenderable.None; }

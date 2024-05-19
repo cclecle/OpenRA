@@ -9,14 +9,16 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
+using OpenRA.Network;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
 {
 	[Desc("Controls the 'Creeps' checkbox in the lobby options.")]
 	[TraitLocation(SystemActors.World)]
-	public class MapCreepsInfo : TraitInfo, ILobbyOptions
+	public class MapCreepsInfo : TraitInfo, ILobbyOptions, ITraitInfoQueryStatRules
 	{
 		[TranslationReference]
 		[Desc("Descriptive label for the creeps checkbox in the lobby.")]
@@ -37,6 +39,11 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("Display order for the creeps checkbox in the lobby.")]
 		public readonly int CheckboxDisplayOrder = 0;
+		IReadOnlyCollection<Tuple<string, string>> ITraitInfoQueryStatRules.GetRules(Session lobbyInfo)
+		{
+			var enabled = lobbyInfo.GlobalSettings.OptionOrDefault("creeps", CheckboxEnabled);
+			return new List<Tuple<string, string>> { new Tuple<string, string>("creeps", enabled.ToString()) };
+		}
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(MapPreview map)
 		{
