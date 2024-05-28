@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -1734,6 +1735,335 @@ namespace OpenRA.Test
 			Assert.That(test_msg3.Players[1].PlayerName, Is.EqualTo("Mee"));
 			Assert.That(test_msg3.Players[1].Score, Is.EqualTo(365));
 			Assert.That(test_msg3.Players[1].Duration, Is.EqualTo(6.3565f));
+		}
+
+		[Test]
+		public void S2A_PLAYER_EX()
+		{
+			// Default Message Instantiation
+			var test_msg1 = new S2A_PLAYER_EX();
+			Assert.That(test_msg1.Header, Is.EqualTo(0x71));
+			Assert.That(test_msg1.Players, Is.Empty);
+
+			// Serialize (Default Values)
+			var test_out = test_msg1.Serialize();
+			Assert.That(test_out.ToArray(), Is.EqualTo(new byte[]
+			{
+				0x71, // Header
+				0x00, // NbPlayers
+			}));
+
+			// Serialize (With Players)
+			var player1 = new S2A_PLAYER_EX_DATA() { PlayerIndex = 23 };
+			player1.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IsInTeam() { AttrValue = 0 });
+			player1.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__TeamId() { AttrValue = 0 });
+			player1.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Ping() { AttrValue = 21 });
+			player1.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Score() { AttrValue = 666 });
+			player1.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Name() { AttrValue = "Foo" });
+			player1.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IP() { AttrValue = "1.2.3.4" });
+			player1.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__APM() { AttrValue = 1.543f });
+			test_msg1.Players.Add(player1);
+
+			var player2 = new S2A_PLAYER_EX_DATA() { PlayerIndex = 32 };
+			player2.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IsInTeam() { AttrValue = 1 });
+			player2.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__TeamId() { AttrValue = 42 });
+			player2.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Earned() { AttrValue = 765 });
+			player2.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Name() { AttrValue = "Bar" });
+			player2.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IP() { AttrValue = "7.2.3.4" });
+			player2.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__MapExplored() { AttrValue = 0.432f });
+			player2.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__ORA__NbHarvester() { AttrValue = 42 });
+			test_msg1.Players.Add(player2);
+
+			test_out = test_msg1.Serialize();
+			Console.WriteLine(BitConverter.ToString(test_out.ToArray()));
+#pragma warning disable SA1137 // Elements should have the same indentation
+			Assert.That(test_out.ToArray(), Is.EqualTo(new byte[]
+			{
+				0x71, // Header
+				2, // NbPlayers
+
+					// Player 1
+					23, 0, 0, 0, // PlayerIndex
+					7, 0, // NbAttr
+						1, 36, 0,
+						1, 37, 0,
+						2, 35, 21, 0,
+						3, 38, 0x9A, 0x02, 0, 0,
+						4, 33, (byte)'F', (byte)'o', (byte)'o', 0,
+						4, 40, (byte)'1', (byte)'.', (byte)'2', (byte)'.', (byte)'3', (byte)'.', (byte)'4', 0,
+						5, 96, 0x06, 0x81, 0xc5, 0x3f,
+
+					// Player 1
+					32, 0, 0, 0, // PlayerIndex
+					7, 0, // NbAttr
+						1, 36, 1,
+						1, 37, 42,
+						3, 101, 0xFD, 0x02, 0, 0,
+						4, 33, (byte)'B', (byte)'a', (byte)'r', 0,
+						4, 40, (byte)'7', (byte)'.', (byte)'2', (byte)'.', (byte)'3', (byte)'.', (byte)'4', 0,
+						5, 104, 0x1b, 0x2f, 0xdd, 0x3e,
+						3 + 0x40, 32, 42, 0, 0, 0,
+			}));
+#pragma warning restore SA1137 // Elements should have the same indentation
+
+			// UnSerialize (Without Players)
+			var test_in = new MemoryStream(new byte[]
+			{
+				0x71, // Header
+				0, // NbPlayers
+			});
+			test_msg1.UnSerialize(test_in);
+			Assert.That(test_msg1.Header, Is.EqualTo(0x71));
+			Assert.That(test_msg1.Players, Is.Empty);
+
+			// UnSerialize (With Players)
+#pragma warning disable SA1137 // Elements should have the same indentation
+			test_in = new MemoryStream(new byte[]
+			{
+				0x71, // Header
+				2, // NbPlayers
+
+					// Player 1
+					1, 0, 0, 0, // PlayerIndex
+					7, 0, // NbAttr
+						1, 36, 1,
+						1, 37, 12,
+						2, 35, 21, 0,
+						3, 38, 0x9A, 0x02, 0, 0,
+						4, 33, (byte)'F', (byte)'o', (byte)'o', 0,
+						4, 40, (byte)'5', (byte)'.', (byte)'5', (byte)'.', (byte)'3', (byte)'.', (byte)'4', 0,
+						5, 96, 0x06, 0x81, 0xc5, 0x3f,
+
+					// Player 1
+					5, 0, 0, 0, // PlayerIndex
+					7, 0, // NbAttr
+						1, 36, 0,
+						1, 37, 0,
+						3, 101, 0xFD, 0x02, 0, 0,
+						4, 33, (byte)'B', (byte)'a', (byte)'z', 0,
+						4, 40, (byte)'9', (byte)'.', (byte)'2', (byte)'.', (byte)'3', (byte)'.', (byte)'4', 0,
+						5, 104, 0x1b, 0x2f, 0xdd, 0x3e,
+						3 + 0x40, 32, 6, 0, 0, 0,
+				});
+#pragma warning restore SA1137 // Elements should have the same indentation
+
+			test_msg1.UnSerialize(test_in);
+
+			Assert.That(test_msg1.Header, Is.EqualTo(0x71));
+			Assert.That(test_msg1.Players.Count, Is.EqualTo(2));
+			Assert.That(test_msg1.Players[0].PlayerIndex, Is.EqualTo(1));
+			Assert.That(test_msg1.Players[0].PlayerInfo.Count, Is.EqualTo(7));
+
+			Check_PLAYER_EX_DATA_INFO_Byte<S2A_PLAYER_EX_DATA_FIELD__IsInTeam>(
+				test_msg1.Players[0].PlayerInfo[0], "IsInTeam", 36, false, false,
+				1);
+
+			Check_PLAYER_EX_DATA_INFO_Byte<S2A_PLAYER_EX_DATA_FIELD__TeamId>(
+				test_msg1.Players[0].PlayerInfo[1], "TeamId", 37, false, false,
+				12);
+
+			Check_PLAYER_EX_DATA_INFO_Short<S2A_PLAYER_EX_DATA_FIELD__Ping>(
+				test_msg1.Players[0].PlayerInfo[2], "Ping (ms)", 35, false, false,
+				21);
+
+			Check_PLAYER_EX_DATA_INFO_Int<S2A_PLAYER_EX_DATA_FIELD__Score>(
+				test_msg1.Players[0].PlayerInfo[3], "Score", 38, false, false,
+				666);
+
+			Check_PLAYER_EX_DATA_INFO_String<S2A_PLAYER_EX_DATA_FIELD__Name>(
+				test_msg1.Players[0].PlayerInfo[4], "Name", 33, false, false,
+				"Foo");
+
+			Check_PLAYER_EX_DATA_INFO_String<S2A_PLAYER_EX_DATA_FIELD__IP>(
+				test_msg1.Players[0].PlayerInfo[5], "IP", 40, false, false,
+				"5.5.3.4");
+
+			Check_PLAYER_EX_DATA_INFO_Float32<S2A_PLAYER_EX_DATA_FIELD__APM>(
+				test_msg1.Players[0].PlayerInfo[6], "APM", 96, false, false,
+				1.543f);
+
+			Assert.That(test_msg1.Players[1].PlayerIndex, Is.EqualTo(5));
+			Assert.That(test_msg1.Players[1].PlayerInfo.Count, Is.EqualTo(7));
+
+			Check_PLAYER_EX_DATA_INFO_Byte<S2A_PLAYER_EX_DATA_FIELD__IsInTeam>(
+				test_msg1.Players[1].PlayerInfo[0], "IsInTeam", 36, false, false,
+				0);
+
+			Check_PLAYER_EX_DATA_INFO_Byte<S2A_PLAYER_EX_DATA_FIELD__TeamId>(
+				test_msg1.Players[1].PlayerInfo[1], "TeamId", 37, false, false,
+				0);
+
+			Check_PLAYER_EX_DATA_INFO_Int<S2A_PLAYER_EX_DATA_FIELD__Earned>(
+				test_msg1.Players[1].PlayerInfo[2], "Earned", 101, false, false,
+				765);
+
+			Check_PLAYER_EX_DATA_INFO_String<S2A_PLAYER_EX_DATA_FIELD__Name>(
+				test_msg1.Players[1].PlayerInfo[3], "Name", 33, false, false,
+				"Baz");
+
+			Check_PLAYER_EX_DATA_INFO_String<S2A_PLAYER_EX_DATA_FIELD__IP>(
+				test_msg1.Players[1].PlayerInfo[4], "IP", 40, false, false,
+				"9.2.3.4");
+
+			Check_PLAYER_EX_DATA_INFO_Float32<S2A_PLAYER_EX_DATA_FIELD__MapExplored>(
+				test_msg1.Players[1].PlayerInfo[5], "MapExplored (%)", 104, false, false,
+				0.432f);
+
+			Check_PLAYER_EX_DATA_INFO_Int<S2A_PLAYER_EX_DATA_FIELD__ORA__NbHarvester>(
+				test_msg1.Players[1].PlayerInfo[6], "NbHarvester", 32, true, false,
+				6);
+
+
+			// Chaining Serialize / UnSerialize
+			var test_msg2 = new S2A_PLAYER_EX();
+
+			var player3 = new S2A_PLAYER_EX_DATA() { PlayerIndex = 12 };
+			player3.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IsInTeam() { AttrValue = 1 });
+			player3.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__TeamId() { AttrValue = 7 });
+			player3.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Ping() { AttrValue = 54 });
+			player3.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Score() { AttrValue = 234 });
+			player3.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Name() { AttrValue = "Another Player" });
+			player3.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IP() { AttrValue = "123.123.100.1" });
+			player3.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__APM() { AttrValue = 11.23f });
+			test_msg2.Players.Add(player3);
+
+			var player4 = new S2A_PLAYER_EX_DATA() { PlayerIndex = 54 };
+			player4.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IsInTeam() { AttrValue = 1 });
+			player4.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__TeamId() { AttrValue = 42 });
+			player4.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Earned() { AttrValue = 432 });
+			player4.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Ping() { AttrValue = 43 });
+			player4.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Name() { AttrValue = "SomeGuy" });
+			player4.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IP() { AttrValue = "1.7.3.9" });
+			player4.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__MapExplored() { AttrValue = 0.132f });
+			player4.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__ORA__NbHarvester() { AttrValue = 2 });
+			test_msg2.Players.Add(player4);
+
+			test_out = test_msg2.Serialize();
+
+			var test_msg3 = new S2A_PLAYER_EX();
+			test_msg3.UnSerialize(test_out);
+
+			Assert.That(test_msg3.Header, Is.EqualTo(0x71));
+			Assert.That(test_msg3.Players.Count, Is.EqualTo(2));
+			Assert.That(test_msg3.Players[0].PlayerIndex, Is.EqualTo(12));
+			Assert.That(test_msg3.Players[0].PlayerInfo.Count, Is.EqualTo(7));
+
+			Check_PLAYER_EX_DATA_INFO_Byte<S2A_PLAYER_EX_DATA_FIELD__IsInTeam>(
+				test_msg3.Players[0].PlayerInfo[0], "IsInTeam", 36, false, false,
+				1);
+
+			Check_PLAYER_EX_DATA_INFO_Byte<S2A_PLAYER_EX_DATA_FIELD__TeamId>(
+				test_msg3.Players[0].PlayerInfo[1], "TeamId", 37, false, false,
+				7);
+
+			Check_PLAYER_EX_DATA_INFO_Short<S2A_PLAYER_EX_DATA_FIELD__Ping>(
+				test_msg3.Players[0].PlayerInfo[2], "Ping (ms)", 35, false, false,
+				54);
+
+			Check_PLAYER_EX_DATA_INFO_Int<S2A_PLAYER_EX_DATA_FIELD__Score>(
+				test_msg3.Players[0].PlayerInfo[3], "Score", 38, false, false,
+				234);
+
+			Check_PLAYER_EX_DATA_INFO_String<S2A_PLAYER_EX_DATA_FIELD__Name>(
+				test_msg3.Players[0].PlayerInfo[4], "Name", 33, false, false,
+				"Another Player");
+
+			Check_PLAYER_EX_DATA_INFO_String<S2A_PLAYER_EX_DATA_FIELD__IP>(
+				test_msg3.Players[0].PlayerInfo[5], "IP", 40, false, false,
+				"123.123.100.1");
+
+			Check_PLAYER_EX_DATA_INFO_Float32<S2A_PLAYER_EX_DATA_FIELD__APM>(
+				test_msg3.Players[0].PlayerInfo[6], "APM", 96, false, false,
+				11.23f);
+
+			Assert.That(test_msg3.Players[1].PlayerIndex, Is.EqualTo(54));
+			Assert.That(test_msg3.Players[1].PlayerInfo.Count, Is.EqualTo(8));
+
+			Check_PLAYER_EX_DATA_INFO_Byte<S2A_PLAYER_EX_DATA_FIELD__IsInTeam>(
+				test_msg3.Players[1].PlayerInfo[0], "IsInTeam", 36, false, false,
+				1);
+
+			Check_PLAYER_EX_DATA_INFO_Byte<S2A_PLAYER_EX_DATA_FIELD__TeamId>(
+				test_msg3.Players[1].PlayerInfo[1], "TeamId", 37, false, false,
+				42);
+
+			Check_PLAYER_EX_DATA_INFO_Int<S2A_PLAYER_EX_DATA_FIELD__Earned>(
+				test_msg3.Players[1].PlayerInfo[2], "Earned", 101, false, false,
+				432);
+
+			Check_PLAYER_EX_DATA_INFO_Short<S2A_PLAYER_EX_DATA_FIELD__Ping>(
+				test_msg3.Players[1].PlayerInfo[3], "Ping (ms)", 35, false, false,
+				43);
+
+			Check_PLAYER_EX_DATA_INFO_String<S2A_PLAYER_EX_DATA_FIELD__Name>(
+				test_msg3.Players[1].PlayerInfo[4], "Name", 33, false, false,
+				"SomeGuy");
+
+			Check_PLAYER_EX_DATA_INFO_String<S2A_PLAYER_EX_DATA_FIELD__IP>(
+				test_msg3.Players[1].PlayerInfo[5], "IP", 40, false, false,
+				"1.7.3.9");
+
+			Check_PLAYER_EX_DATA_INFO_Float32<S2A_PLAYER_EX_DATA_FIELD__MapExplored>(
+				test_msg3.Players[1].PlayerInfo[6], "MapExplored (%)", 104, false, false,
+				0.132f);
+
+			Check_PLAYER_EX_DATA_INFO_Int<S2A_PLAYER_EX_DATA_FIELD__ORA__NbHarvester>(
+				test_msg3.Players[1].PlayerInfo[7], "NbHarvester", 32, true, false,
+				2);
+		}
+
+		public static void Check_PLAYER_EX_DATA_INFO_Byte<TRECORD>(A_S2A_PLAYER_EX_DATA_FIELD field, string name, byte attrId, bool bCustom, bool bExtended, byte value)
+		where TRECORD : S2A_PLAYER_EX_DATA_FIELD__Byte, new()
+		{
+			Check_PLAYER_EX_DATA_INFO<S2A_PLAYER_EX_DATA_FIELD__Byte, TRECORD>(field, name, attrId, 1, bCustom, bExtended, value.ToString(CultureInfo.InvariantCulture));
+			Assert.AreEqual(value, ((S2A_PLAYER_EX_DATA_FIELD__Byte)field).AttrValue);
+			Assert.AreEqual(value, ((TRECORD)field).AttrValue);
+		}
+
+		public static void Check_PLAYER_EX_DATA_INFO_Short<TRECORD>(A_S2A_PLAYER_EX_DATA_FIELD field, string name, byte attrId, bool bCustom, bool bExtended, short value)
+		where TRECORD : S2A_PLAYER_EX_DATA_FIELD__Short, new()
+		{
+			Check_PLAYER_EX_DATA_INFO<S2A_PLAYER_EX_DATA_FIELD__Short, TRECORD>(field, name, attrId, 2, bCustom, bExtended, value.ToString(CultureInfo.InvariantCulture));
+			Assert.AreEqual(value, ((S2A_PLAYER_EX_DATA_FIELD__Short)field).AttrValue);
+			Assert.AreEqual(value, ((TRECORD)field).AttrValue);
+		}
+
+		public static void Check_PLAYER_EX_DATA_INFO_Int<TRECORD>(A_S2A_PLAYER_EX_DATA_FIELD field, string name, byte attrId, bool bCustom, bool bExtended, int value)
+		where TRECORD : S2A_PLAYER_EX_DATA_FIELD__Int, new()
+		{
+			Check_PLAYER_EX_DATA_INFO<S2A_PLAYER_EX_DATA_FIELD__Int, TRECORD>(field, name, attrId, 3, bCustom, bExtended, value.ToString(CultureInfo.InvariantCulture));
+			Assert.AreEqual(value, ((S2A_PLAYER_EX_DATA_FIELD__Int)field).AttrValue);
+			Assert.AreEqual(value, ((TRECORD)field).AttrValue);
+		}
+
+		public static void Check_PLAYER_EX_DATA_INFO_String<TRECORD>(A_S2A_PLAYER_EX_DATA_FIELD field, string name, byte attrId, bool bCustom, bool bExtended, string value)
+		where TRECORD : S2A_PLAYER_EX_DATA_FIELD__String, new()
+		{
+			Check_PLAYER_EX_DATA_INFO<S2A_PLAYER_EX_DATA_FIELD__String, TRECORD>(field, name, attrId, 4, bCustom, bExtended, value);
+			Assert.AreEqual(value, ((S2A_PLAYER_EX_DATA_FIELD__String)field).AttrValue);
+			Assert.AreEqual(value, ((TRECORD)field).AttrValue);
+		}
+
+		public static void Check_PLAYER_EX_DATA_INFO_Float32<TRECORD>(A_S2A_PLAYER_EX_DATA_FIELD field, string name, byte attrId, bool bCustom, bool bExtended, float value)
+		where TRECORD : S2A_PLAYER_EX_DATA_FIELD__Float32, new()
+		{
+			Check_PLAYER_EX_DATA_INFO<S2A_PLAYER_EX_DATA_FIELD__Float32, TRECORD>(field, name, attrId, 5, bCustom, bExtended, value.ToString(CultureInfo.InvariantCulture));
+			Assert.AreEqual(value, ((S2A_PLAYER_EX_DATA_FIELD__Float32)field).AttrValue);
+			Assert.AreEqual(value, ((TRECORD)field).AttrValue);
+		}
+
+		public static void Check_PLAYER_EX_DATA_INFO<TTYPE, TRECORD>(A_S2A_PLAYER_EX_DATA_FIELD field, string name, byte attrId, byte attrType, bool bCustom, bool bExtended, string value)
+		where TTYPE : A_S2A_PLAYER_EX_DATA_FIELD, new()
+		where TRECORD : A_S2A_PLAYER_EX_DATA_FIELD, new()
+		{
+			Assert.IsInstanceOf<TTYPE>(field);
+			Assert.IsInstanceOf<TRECORD>(field);
+			Assert.AreEqual(name, field.Name);
+			Assert.AreEqual(attrId, field.AttrId);
+			Assert.AreEqual(attrType, field.AttrType);
+			Assert.AreEqual(bCustom, field.AttrTypeCustom);
+			Assert.AreEqual(bExtended, field.AttrTypeExtended);
+			Assert.AreEqual(value, field.ToString());
 		}
 
 		[Test]

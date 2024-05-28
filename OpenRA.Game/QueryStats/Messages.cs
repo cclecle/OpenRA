@@ -23,7 +23,7 @@ namespace OpenRA.QueryStats
 
 	public class MessageFactory : AMessageFactory<MessageFactory>
 	{
-		readonly AMessage[] baseMessages = new List<AMessage>
+		readonly AMessage[] baseMessages = new AMessage[]
 		{
 			new A2S_INFO(),
 			new S2A_INFO(),
@@ -32,8 +32,8 @@ namespace OpenRA.QueryStats
 			new A2S_RULES(),
 			new S2A_RULES(),
 			new S2C_CHALLENGE()
-		}.ToArray();
-		public readonly List<AMessage> CustomMessages = new();
+		};
+		public readonly IList<AMessage> CustomMessages = new List<AMessage>();
 		public override AMessage[] RegisteredMessages { get => baseMessages.Union(CustomMessages).ToArray(); }
 	}
 
@@ -41,18 +41,8 @@ namespace OpenRA.QueryStats
 	{
 		public abstract byte Header { get; }
 
-		protected virtual StringBuilder ToStringBuilder()
-		{
-			return new StringBuilder(base.ToString())
-				.AppendLine()
-				.AppendLine($"\tHeader : {Header:X02}");
-		}
-
-		public override string ToString()
-		{
-			return ToStringBuilder()
-				.ToString();
-		}
+		protected virtual StringBuilder ToStringBuilder() => new StringBuilder(base.ToString()).AppendLine().AppendLine($"\tHeader : {Header:X02}");
+		public override string ToString() => ToStringBuilder().ToString();
 
 		public override bool Identify(MemoryStream test_stream)
 		{
@@ -71,10 +61,7 @@ namespace OpenRA.QueryStats
 			}
 		}
 
-		protected override void SerializeHeader()
-		{
-			writer.Write(Header);
-		}
+		protected override void SerializeHeader() => writer.Write(Header);
 
 		protected override void UnSerializeHeader()
 		{
@@ -162,9 +149,8 @@ namespace OpenRA.QueryStats
 		public string SpecName { get; set; } = null;
 		public string Keywords { get; set; } = null;
 		public ulong? GameID { get; set; } = null;
-		protected override StringBuilder ToStringBuilder()
-		{
-			return base.ToStringBuilder()
+		protected override StringBuilder ToStringBuilder() =>
+			base.ToStringBuilder()
 				.AppendLine($"\tProtocol : {Protocol}")
 				.AppendLine($"\tName : {Name}")
 				.AppendLine($"\tMap : {Map}")
@@ -186,7 +172,6 @@ namespace OpenRA.QueryStats
 				.AppendLine($"\tSpecName? : {SpecName}")
 				.AppendLine($"\tKeywords? : {Keywords}")
 				.AppendLine($"\tGameID? : {GameID}");
-		}
 
 		protected override void UnSerializePayload()
 		{
@@ -296,11 +281,7 @@ namespace OpenRA.QueryStats
 	{
 		public string Name;
 		public string Value;
-		public override string ToString()
-		{
-			return $"{Name} : {Value}";
-		}
-
+		public override string ToString() => $"{Name} : {Value}";
 		public MemoryStream Serialize()
 		{
 			var stream = new MemoryStream();
@@ -364,21 +345,9 @@ namespace OpenRA.QueryStats
 	{
 		public override byte Header { get => 0x41; }
 		public int Challenge { get; set; } = 0;
-		protected override StringBuilder ToStringBuilder()
-		{
-			return base.ToStringBuilder()
-				.AppendLine($"\tChallenge : {Challenge:X08}");
-		}
-
-		protected override void UnSerializePayload()
-		{
-			Challenge = reader.ReadInt32();
-		}
-
-		protected override void SerializePayload()
-		{
-			writer.Write(Challenge);
-		}
+		protected override StringBuilder ToStringBuilder() => base.ToStringBuilder().AppendLine($"\tChallenge : {Challenge:X08}");
+		protected override void UnSerializePayload() => Challenge = reader.ReadInt32();
+		protected override void SerializePayload() => writer.Write(Challenge);
 	}
 
 	public class A2S_PLAYER : A2S_SimpleCommand
@@ -392,10 +361,7 @@ namespace OpenRA.QueryStats
 		public string PlayerName;
 		public int Score;
 		public float Duration;
-		public override string ToString()
-		{
-			return $"{Index}\t{PlayerName}\t{Score}\t{Duration}";
-		}
+		public override string ToString() => $"{Index}\t{PlayerName}\t{Score}\t{Duration}";
 
 		public MemoryStream Serialize()
 		{

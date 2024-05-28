@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Text;
 
@@ -35,19 +34,15 @@ namespace OpenRA.QueryStats
 	{
 		public abstract int Header { get; }
 		public MemoryStream Payload { get; set; } = new MemoryStream();
-		protected virtual StringBuilder HeaderToStringBuilder()
-		{
-			return new StringBuilder(base.ToString())
+		protected virtual StringBuilder HeaderToStringBuilder() =>
+ 			new StringBuilder(base.ToString())
 				.AppendLine()
 				.AppendLine($"\tHeader : {Header:X02}");
-		}
 
-		public override string ToString()
-		{
-			return HeaderToStringBuilder()
+		public override string ToString() =>
+			HeaderToStringBuilder()
 				.AppendLine($"\tPayload : {BitConverter.ToString(Payload.ToArray())}")
 				.ToString();
-		}
 
 		public override bool Identify(MemoryStream test_stream)
 		{
@@ -66,10 +61,7 @@ namespace OpenRA.QueryStats
 			}
 		}
 
-		protected override void SerializeHeader()
-		{
-			writer.Write(Header);
-		}
+		protected override void SerializeHeader() => writer.Write(Header);
 
 		protected override void UnSerializeHeader()
 		{
@@ -77,10 +69,7 @@ namespace OpenRA.QueryStats
 				throw new ExceptionPacketWrongHeader();
 		}
 
-		protected override void SerializePayload()
-		{
-			Payload.WriteTo(stream);
-		}
+		protected override void SerializePayload() => Payload.WriteTo(stream);
 
 		protected override void UnSerializePayload()
 		{
@@ -121,9 +110,8 @@ namespace OpenRA.QueryStats
 		public short Size { get; private set; } = 1248;
 		public int? CompressedSize { get; set; } = null;
 		public int? CompressedCRC32 { get; set; } = null;
-		protected override StringBuilder HeaderToStringBuilder()
-		{
-			return base.HeaderToStringBuilder()
+		protected override StringBuilder HeaderToStringBuilder() =>
+		 	base.HeaderToStringBuilder()
 				.AppendLine($"\tID : {ID:X08}")
 				.AppendLine($"\tID_compressed : {ID_compressed}")
 				.AppendLine($"\tTotal : {Total}")
@@ -131,7 +119,6 @@ namespace OpenRA.QueryStats
 				.AppendLine($"\tSize : {Size}")
 				.AppendLine($"\tCompressedSize : {CompressedSize}")
 				.AppendLine($"\tCompressedCRC32 : {CompressedCRC32}");
-		}
 
 		void Check()
 		{

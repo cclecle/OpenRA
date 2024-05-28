@@ -16,6 +16,7 @@ using System.Net;
 
 namespace OpenRA.QueryStats
 {
+	#region Exceptions
 	public abstract class ExceptionSession : Exception { }
 	public class UnsupportedMessage : ExceptionSession { }
 	public class WrongPacketSequence : ExceptionSession { }
@@ -27,6 +28,9 @@ namespace OpenRA.QueryStats
 	public class WrongServerResponse : ClientSessionException { }
 	public class PreviousCommandNotCompleted : ClientSessionException { }
 	public class ChallengeShouldNotBeSet : ClientSessionException { }
+	#endregion
+
+	#region Session
 	public abstract class Session
 	{
 		protected int? challenge;
@@ -118,7 +122,12 @@ namespace OpenRA.QueryStats
 
 		protected abstract Frame Impl_Process_A2S_PLAYER(A2S_PLAYER aA2S_PLAYER);
 
-		protected virtual Frame ProcessCommand(A2S_SimpleCommand a2S_SimpleCommand)
+		protected virtual Frame ProcessCustomCommand(A2S_SimpleCommand a2S_SimpleCommand)
+		{
+			return null;
+		}
+
+		protected Frame ProcessCommand(A2S_SimpleCommand a2S_SimpleCommand)
 		{
 			if (a2S_SimpleCommand is A2S_INFO a2S_INFO)
 			{
@@ -136,7 +145,11 @@ namespace OpenRA.QueryStats
 			}
 			else
 			{
-				throw new UnsupportedMessage();
+				var res = ProcessCustomCommand(a2S_SimpleCommand);
+				if (res is null)
+					throw new UnsupportedMessage();
+				else
+					return res;
 			}
 		}
 
@@ -188,30 +201,35 @@ namespace OpenRA.QueryStats
 
 		protected virtual void OnCommandCompleted(A2S_SimpleCommand command) { }
 
-		protected virtual Frame ProcessResponse(Message message)
+		protected virtual void CheckResponse(Message message)
+		{
+			if (message is S2A_INFO)
+			{
+				if (pendingCommand is not A2S_INFO)
+					throw new WrongServerResponse();
+			}
+			else if (message is S2A_RULES)
+			{
+				if (pendingCommand is not A2S_RULES)
+					throw new WrongServerResponse();
+			}
+			else if (message is S2A_PLAYER)
+			{
+				if (pendingCommand is not A2S_PLAYER)
+					throw new WrongServerResponse();
+			}
+			else
+			{
+				throw new UnsupportedMessage();
+			}
+		}
+
+		protected Frame ProcessResponse(Message message)
 		{
 			var command = pendingCommand;
 			try
 			{
-				if (message is S2A_INFO)
-				{
-					if (pendingCommand is not A2S_INFO)
-						throw new WrongServerResponse();
-				}
-				else if (message is S2A_RULES)
-				{
-					if (pendingCommand is not A2S_RULES)
-						throw new WrongServerResponse();
-				}
-				else if (message is S2A_PLAYER)
-				{
-					if (pendingCommand is not A2S_PLAYER)
-						throw new WrongServerResponse();
-				}
-				else
-				{
-					throw new UnsupportedMessage();
-				}
+				CheckResponse(message);
 			}
 			finally
 			{
@@ -275,7 +293,9 @@ namespace OpenRA.QueryStats
 			return new Frame(a2S_SimpleCommand);
 		}
 	}
+	#endregion
 
+	#region SessionHandler
 	public abstract class SessionHandler<TSession> where TSession : Session, new()
 	{
 		public TimeSpan SessionTTLUpdate { get; protected set; } = TimeSpan.FromMinutes(5);
@@ -295,15 +315,9 @@ namespace OpenRA.QueryStats
 			}
 		}
 
-		protected virtual TSession CreateSession()
-		{
-			return new TSession();
-		}
+		protected virtual TSession CreateSession() => new();
 
-		public TSession GetSession(IPEndPoint remoteEndPoint)
-		{
-			return activeSessions[remoteEndPoint];
-		}
+		public TSession GetSession(IPEndPoint remoteEndPoint) => activeSessions[remoteEndPoint];
 
 		protected TSession GetOrCreateSession(IPEndPoint remoteEndPoint)
 		{
@@ -373,4 +387,5 @@ namespace OpenRA.QueryStats
 	}
 
 	public class SimpleClientSessionHandler : ClientSessionHandler<ClientSession> { }
+	#endregion
 }

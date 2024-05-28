@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Immutable;
 using System.IO;
 using System.Text;
 
@@ -60,10 +59,7 @@ namespace OpenRA.QueryStats
 		protected BinaryReader reader = null;
 		protected BinaryWriter writer = null;
 		readonly object serializeLock = new();
-		public override string ToString()
-		{
-			return $"## Message : {GetType().Name} : {GetHashCode()}";
-		}
+		public override string ToString() => $"## Message : {GetType().Name} : {GetHashCode()}";
 
 		public abstract bool Identify(MemoryStream test_stream);
 		protected abstract void SerializeHeader();

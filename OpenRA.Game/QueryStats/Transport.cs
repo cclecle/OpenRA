@@ -138,11 +138,7 @@ namespace OpenRA.QueryStats
 			}
 		}
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return GetEnumerator();
-		}
-
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 		public IEnumerator<Packet> GetEnumerator()
 		{
 			foreach (var pkt in pkts)

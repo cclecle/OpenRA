@@ -15,7 +15,8 @@
 	Implementing Source Protocol, with some implementation specific limitations / behaviors:
 	- no compression support
 	- <Size> Field in Multi-packet Response is not supported
-	- server will request challenge for every requests
+	- server will request challenge for every new session
+	Tested using Qstat.exe (for standard fields)
 */
 
 using System;
@@ -37,6 +38,7 @@ namespace OpenRA.Server
 		public static NumberFormatInfo Nfi = new() { NumberDecimalSeparator = "." };
 	}
 
+	#region Player stats update
 	[TraitLocation(SystemActors.World)]
 	[Desc("Attach this to the Word to collect observer stats.")]
 	public class QueryStatsUpdatePlayerStatsInfo : TraitInfo
@@ -92,16 +94,23 @@ namespace OpenRA.Server
 					{
 						var query_pstats = pt.Value.QueryPStat;
 						query_pstats.Name = pt.Key.PlayerName;
-						query_pstats.Score = internal_pstats.Experience;
+						query_pstats.Experience = internal_pstats.Experience;
 						query_pstats.Team = pt.Key.PlayerReference.Team;
-
-						// query_pstats.LastLatency = pt.Key.PlayerReference.
+						query_pstats.ArmyValue = internal_pstats.ArmyValue;
+						query_pstats.AssetsValue = internal_pstats.AssetsValue;
+						query_pstats.BuildingsDead = internal_pstats.BuildingsDead;
+						query_pstats.BuildingsKilled = internal_pstats.BuildingsKilled;
+						query_pstats.Earned = internal_pstats.Earned;
+						query_pstats.UnitsDead = internal_pstats.UnitsDead;
+						query_pstats.UnitsKilled = internal_pstats.UnitsKilled;
 					}
 				}
 			}
 		}
 	}
+	#endregion
 
+	#region Server stats update
 	public class QueryStatUpdateTrait : INotifySyncLobbyInfo, IStartGame, IEndGame, IClientJoined, INotifyServerStart, INotifyServerEmpty, INotifyServerShutdown, ITick
 	{
 		readonly GameStats<PlayerStats> gameStats;
@@ -200,9 +209,16 @@ namespace OpenRA.Server
 						IsSectating = c.IsObserver,
 						Name = c.Name,
 						Team = c.Team,
-						Score = 0,
-						RemoteEndPoint = c.IPAddress is not null ? IPEndPoint.Parse(c.IPAddress) : null,
-						LastLatency = c.LastLatency
+						Experience = 0,
+						ArmyValue = 0,
+						AssetsValue = 0,
+						BuildingsDead = 0,
+						BuildingsKilled = 0,
+						Earned = 0,
+						UnitsDead = 0,
+						UnitsKilled = 0,
+						RemoteEndPoint = c.IPAddress ?? "",
+						LastLatency = c.LastLatency,
 					});
 				}
 			}
@@ -224,7 +240,9 @@ namespace OpenRA.Server
 			}
 		}
 	}
+	#endregion
 
+	#region Internal stats data structures
 	public class PlayerStats
 	{
 		public int Index;
@@ -234,8 +252,15 @@ namespace OpenRA.Server
 		public bool IsSectating = false;
 		public string Name = "";
 		public int Team = -1;
-		public int Score = -1;
-		public IPEndPoint RemoteEndPoint;
+		public int Experience = -1;
+		public int ArmyValue = -1;
+		public int AssetsValue = -1;
+		public int BuildingsDead = -1;
+		public int BuildingsKilled = -1;
+		public int Earned = -1;
+		public int UnitsDead = -1;
+		public int UnitsKilled = -1;
+		public string RemoteEndPoint = "";
 		public int LastLatency = -1;
 	}
 
@@ -263,7 +288,9 @@ namespace OpenRA.Server
 		public int ListenPort = -1;
 		public ICollection<Tuple<string, string>> OtherRules = new List<Tuple<string, string>>();
 	}
+	#endregion
 
+	#region Query Protocol Server & Session classes buildup
 	public class OpenRAServerSessionHandler<TGameStats, TPlayerStats> : ServerSessionHandler<OpenRAServerSession<TGameStats, TPlayerStats>>
 	where TGameStats : GameStats<TPlayerStats>, new()
 	where TPlayerStats : PlayerStats, new()
@@ -283,11 +310,28 @@ namespace OpenRA.Server
 	{
 		public TGameStats GameStats = null;
 		static readonly ObjectCache Cache = MemoryCache.Default;
+
+		public OpenRAServerSession()
+		{
+			MessageFactory.GetFactory().CustomMessages.Add(new A2S_PLAYER_EX());
+			MessageFactory.GetFactory().CustomMessages.Add(new S2A_PLAYER_EX());
+		}
+
 		protected override Frame OnMessageReceived(Message message)
 		{
 			Console.WriteLine("decoded msg:");
 			Console.WriteLine(message);
 			return base.OnMessageReceived(message);
+		}
+
+		protected override Frame ProcessCustomCommand(A2S_SimpleCommand a2S_SimpleCommand)
+		{
+			if (a2S_SimpleCommand is A2S_PLAYER_EX a2S_PLAYER_EX)
+			{
+				return Impl_Process_A2S_PLAYER_EX(a2S_PLAYER_EX);
+			}
+
+			return null;
 		}
 
 		protected override Frame Impl_Process_A2S_INFO(A2S_INFO a2S_INFO)
@@ -394,7 +438,7 @@ namespace OpenRA.Server
 					foreach (var player in GameStats.Players)
 					{
 						var pname = player.IsSectating ? $"[SPEC] {player.Name}" : player.Name;
-						msg.Players.Add(new S2A_PLAYER_DATA { Index = (byte)player.Index, PlayerName = pname, Score = player.Score, Duration = (float)(GameStats.StartTimeUtc - now).TotalSeconds });
+						msg.Players.Add(new S2A_PLAYER_DATA { Index = (byte)player.Index, PlayerName = pname, Score = player.Experience, Duration = (float)(now - GameStats.StartTimeUtc).TotalSeconds });
 					}
 				}
 
@@ -408,7 +452,57 @@ namespace OpenRA.Server
 
 			return s2aPlayer;
 		}
+
+		protected Frame Impl_Process_A2S_PLAYER_EX(A2S_PLAYER_EX aA2S_PLAYER_EX)
+		{
+			Frame s2aPlayerEx;
+
+			if (!Cache.Contains("S2A_PLAYER_EX"))
+			{
+				var msg = new S2A_PLAYER_EX();
+				var now = DateTime.UtcNow;
+
+				lock (GameStats)
+				{
+					foreach (var player in GameStats.Players)
+					{
+						var player_ex_data = new S2A_PLAYER_EX_DATA() { PlayerIndex = (byte)player.Index };
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IsInTeam() { AttrValue = player.Team > 0 ? (byte)1 : (byte)0 });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__TeamId() { AttrValue = (byte)player.Team });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Name() { AttrValue = player.Name });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Score() { AttrValue = player.Experience });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__ConnectionTime() { AttrValue = (float)(now - GameStats.StartTimeUtc).TotalSeconds });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Faction() { AttrValue = player.Faction });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IsAdmin() { AttrValue = player.IsAdmin ? (byte)1 : (byte)0 });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IsBot() { AttrValue = player.IsBot ? (byte)1 : (byte)0 });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IsSpectating() { AttrValue = player.IsSectating ? (byte)1 : (byte)0 });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__ArmyValue() { AttrValue = player.ArmyValue });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__AssetsValue() { AttrValue = player.AssetsValue });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__BuildingsDead() { AttrValue = player.BuildingsDead });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__BuildingsKilled() { AttrValue = player.BuildingsKilled });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Earned() { AttrValue = player.Earned });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__UnitsDead() { AttrValue = player.UnitsDead });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__UnitsKilled() { AttrValue = player.UnitsKilled });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__IP() { AttrValue = player.RemoteEndPoint });
+						player_ex_data.PlayerInfo.Add(new S2A_PLAYER_EX_DATA_FIELD__Ping() { AttrValue = (short)player.LastLatency });
+						msg.Players.Add(player_ex_data);
+					}
+				}
+
+				s2aPlayerEx = new Frame(msg);
+				Cache.Add("S2A_PLAYER_EX", s2aPlayerEx, DateTimeOffset.UtcNow.AddSeconds(5));
+			}
+			else
+			{
+				s2aPlayerEx = (Frame)Cache.Get("S2A_PLAYER_EX");
+			}
+
+			return s2aPlayerEx;
+		}
 	}
+	#endregion
+
+	#region UDP Async server
 
 	public sealed class QueryStatStatServer<TGameStats, TPlayerStats> : IDisposable
 	where TGameStats : GameStats<TPlayerStats>, new()
@@ -507,4 +601,5 @@ namespace OpenRA.Server
 			CloseServer();
 		}
 	}
+	#endregion
 }
